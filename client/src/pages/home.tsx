@@ -53,7 +53,7 @@ export default function Home() {
       {/* Hero */}
       <div className="space-y-3 pt-2">
         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-          Tanzania Pavement Engineering Research · 2026
+          Civil Works · 2026
         </div>
         <h1 className="text-xl font-bold tracking-tight leading-snug">
           Aggregate Selection Companion
