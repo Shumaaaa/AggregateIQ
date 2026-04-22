@@ -72,7 +72,7 @@ export default function Info() {
 
   return (
     <div className="space-y-4">
-      <BackHomeButtons backHref="/" backLabel="Home" />
+      <BackHomeButtons backHref="/home" backLabel="Home" />
       <SectionHeader
         title="Raw Information"
         subtitle="Everything you need to know — from what porosity means to how the model works."

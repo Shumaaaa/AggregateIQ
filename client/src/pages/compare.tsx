@@ -91,7 +91,7 @@ export default function Compare() {
 
   return (
     <div className="space-y-6">
-      <BackHomeButtons backHref="/" backLabel="Home" />
+      <BackHomeButtons backHref="/home" backLabel="Home" />
       <SectionHeader
         title="Aggregate Comparison"
         subtitle="Compare up to 3 aggregates side by side to identify the best performer."

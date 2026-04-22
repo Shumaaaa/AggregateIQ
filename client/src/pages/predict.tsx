@@ -69,7 +69,7 @@ export default function Predict() {
 
   return (
     <div className="space-y-6">
-      <BackHomeButtons backHref="/" backLabel="Home" />
+      <BackHomeButtons backHref="/home" backLabel="Home" />
       <SectionHeader
         title="Adhesivity Predictor"
         subtitle="Enter aggregate properties to predict Retained Coating (%) and adhesivity grade."

@@ -35,7 +35,7 @@ export function BackHomeButtons({ backHref, backLabel = "Back" }: BackHomeButton
       )}
 
       <Button variant="ghost" size="sm" asChild className="h-8 px-2 text-muted-foreground hover:text-foreground">
-        <Link href="/">
+        <Link href="/home">
           <Home className="w-4 h-4 mr-1" />
           Home
         </Link>

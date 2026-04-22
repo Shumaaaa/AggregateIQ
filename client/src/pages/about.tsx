@@ -10,7 +10,7 @@ import { SectionHeader } from "@/components/ui-custom/section-header";
 export default function About() {
   return (
     <div className="space-y-6 max-w-2xl">
-      <BackHomeButtons backHref="/" backLabel="Home" />
+      <BackHomeButtons backHref="/home" backLabel="Home" />
       <SectionHeader
         title="About AggregateIQ"
         subtitle="Methodology, data sources, and model limitations."
