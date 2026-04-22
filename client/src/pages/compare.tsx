@@ -1,6 +1,6 @@
 /**
  * Compare Page — Side-by-side comparison of up to 3 aggregates
- * User can enter custom aggregate name + all properties
+ * 6-factor input: Porosity, MC, SiO₂, CaO, Fe₂O₃, Al₂O₃
  */
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,15 +15,16 @@ import { GradeBadge } from "@/components/ui-custom/grade-badge";
 import { SectionHeader } from "@/components/ui-custom/section-header";
 import { predictAdhesivity, type AggregateInput } from "@/lib/adhesivity-model";
 
-// Each aggregate entry in the comparison form
 interface AggEntry {
   id: number;
-  customName: string;       // user-typed name — can be anything
+  customName: string;
   aggregateType: string;
   porosity: string;
   moistureContent: string;
   sio2: string;
   cao: string;
+  fe2o3: string;
+  al2o3: string;
 }
 
 const CARD_COLORS = [
@@ -36,17 +37,36 @@ let nextId = 3;
 
 function entryToInput(e: AggEntry): AggregateInput {
   return {
-    porosity:       e.porosity       ? +e.porosity       : undefined,
+    porosity:        e.porosity        ? +e.porosity        : undefined,
     moistureContent: e.moistureContent ? +e.moistureContent : undefined,
-    sio2:           e.sio2           ? +e.sio2           : undefined,
-    cao:            e.cao            ? +e.cao            : undefined,
-    aggregateType:  e.aggregateType,
+    sio2:            e.sio2            ? +e.sio2            : undefined,
+    cao:             e.cao             ? +e.cao             : undefined,
+    fe2o3:           e.fe2o3           ? +e.fe2o3           : undefined,
+    al2o3:           e.al2o3           ? +e.al2o3           : undefined,
+    aggregateType:   e.aggregateType,
   };
 }
 
 function emptyEntry(id: number, defaultType: string, defaultName: string): AggEntry {
-  return { id, customName: defaultName, aggregateType: defaultType, porosity: "", moistureContent: "", sio2: "", cao: "" };
+  return {
+    id, customName: defaultName, aggregateType: defaultType,
+    porosity: "", moistureContent: "", sio2: "", cao: "", fe2o3: "", al2o3: "",
+  };
 }
+
+// Physical fields (upper section)
+const PHYSICAL_FIELDS: { field: keyof AggEntry; label: string }[] = [
+  { field: "porosity",        label: "Porosity (%)"        },
+  { field: "moistureContent", label: "Moisture Content (%)" },
+];
+
+// Chemical fields (lower section)
+const CHEMICAL_FIELDS: { field: keyof AggEntry; label: string }[] = [
+  { field: "fe2o3", label: "Fe₂O₃ (%)" },
+  { field: "al2o3", label: "Al₂O₃ (%)" },
+  { field: "sio2",  label: "SiO₂ (%)"  },
+  { field: "cao",   label: "CaO (%)"   },
+];
 
 export default function Compare() {
   const [entries, setEntries] = useState<AggEntry[]>([
@@ -55,8 +75,8 @@ export default function Compare() {
   ]);
   const [results, setResults] = useState<Array<ReturnType<typeof predictAdhesivity>> | null>(null);
 
-  function updateEntry(id: number, field: keyof AggEntry, value: string) {
-    setEntries(es => es.map(e => e.id === id ? { ...e, [field]: value } : e));
+  function updateEntry(id: number, f: keyof AggEntry, value: string) {
+    setEntries(es => es.map(e => e.id === id ? { ...e, [f]: value } : e));
     setResults(null);
   }
 
@@ -76,14 +96,10 @@ export default function Compare() {
   }
 
   function handleReset() {
-    setEntries([
-      emptyEntry(1, "basalt",  "Aggregate A"),
-      emptyEntry(2, "granite", "Aggregate B"),
-    ]);
+    setEntries([emptyEntry(1, "basalt", "Aggregate A"), emptyEntry(2, "granite", "Aggregate B")]);
     setResults(null);
   }
 
-  // Sort by best RC first
   const ranked = results
     ? [...results.map((r, i) => ({ ...r, idx: i, label: entries[i].customName || `Aggregate ${i + 1}` }))]
         .sort((a, b) => b.predictedRC - a.predictedRC)
@@ -103,7 +119,6 @@ export default function Compare() {
           <Card key={entry.id} style={{ borderTop: `3px solid ${CARD_COLORS[idx]}` }}>
             <CardHeader className="pb-2 pt-4">
               <div className="flex items-center justify-between gap-2">
-                {/* Custom name — editable */}
                 <div className="flex-1">
                   <Label className="text-xs text-muted-foreground">Name</Label>
                   <Input
@@ -116,8 +131,7 @@ export default function Compare() {
                 </div>
                 {entries.length > 2 && (
                   <Button
-                    variant="ghost"
-                    size="icon"
+                    variant="ghost" size="icon"
                     className="h-6 w-6 text-muted-foreground mt-4 shrink-0"
                     onClick={() => removeEntry(entry.id)}
                     data-testid={`button-remove-${idx}`}
@@ -129,7 +143,7 @@ export default function Compare() {
             </CardHeader>
 
             <CardContent className="space-y-2.5">
-              {/* Aggregate type */}
+              {/* Type */}
               <div>
                 <Label className="text-xs">Type</Label>
                 <Select
@@ -150,27 +164,41 @@ export default function Compare() {
                 </Select>
               </div>
 
-              {/* Property inputs — no placeholder text */}
-              {([
-                { field: "porosity"        as const, label: "Porosity (%)"         },
-                { field: "moistureContent" as const, label: "Moisture Content (%)"  },
-                { field: "sio2"            as const, label: "SiO₂ (%)"             },
-                { field: "cao"             as const, label: "CaO (%)"              },
-              ] as const).map(({ field, label }) => (
-                <div key={field}>
-                  <Label className="text-xs">{label}</Label>
-                  <Input
-                    type="number"
-                    step="0.001"
-                    className="mt-1 h-7 text-xs"
-                    value={entry[field]}
-                    onChange={e => updateEntry(entry.id, field, e.target.value)}
-                    data-testid={`input-${field}-${idx}`}
-                  />
-                </div>
-              ))}
+              {/* Physical */}
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5">Physical</p>
+                {PHYSICAL_FIELDS.map(({ field, label }) => (
+                  <div key={field} className="mb-2">
+                    <Label className="text-xs">{label}</Label>
+                    <Input
+                      type="number" step="0.001" min="0"
+                      className="mt-1 h-7 text-xs"
+                      value={entry[field] as string}
+                      onChange={e => updateEntry(entry.id, field, e.target.value)}
+                      data-testid={`input-${field}-${idx}`}
+                    />
+                  </div>
+                ))}
+              </div>
 
-              {/* Inline result after compare */}
+              {/* Chemical */}
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5">Chemical (XRF)</p>
+                {CHEMICAL_FIELDS.map(({ field, label }) => (
+                  <div key={field} className="mb-2">
+                    <Label className="text-xs">{label}</Label>
+                    <Input
+                      type="number" step="0.01" min="0"
+                      className="mt-1 h-7 text-xs"
+                      value={entry[field] as string}
+                      onChange={e => updateEntry(entry.id, field, e.target.value)}
+                      data-testid={`input-${field}-${idx}`}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Inline result */}
               {results && results[idx] && (
                 <div className="pt-2 mt-1 border-t border-border space-y-1">
                   <div className="flex items-center justify-between">
@@ -208,7 +236,7 @@ export default function Compare() {
         )}
       </div>
 
-      {/* Action buttons */}
+      {/* Actions */}
       <div className="flex gap-3">
         <Button onClick={handleCompare} data-testid="button-compare">
           <BarChart3 className="w-4 h-4 mr-2" />
@@ -219,11 +247,10 @@ export default function Compare() {
         </Button>
       </div>
 
-      {/* Ranking results */}
+      {/* Ranking */}
       {ranked && (
         <div className="space-y-4">
           <h2 className="text-sm font-semibold">Ranking — Best Performer First</h2>
-
           <div className="space-y-3">
             {ranked.map((r, i) => (
               <Card key={r.idx} className={i === 0 ? "border-primary/40" : ""}>
@@ -239,7 +266,6 @@ export default function Compare() {
                     </span>
                   </div>
 
-                  {/* RC bar */}
                   <div className="h-2.5 bg-muted rounded-full overflow-hidden mb-3">
                     <div
                       className="h-full rounded-full"
@@ -247,13 +273,15 @@ export default function Compare() {
                     />
                   </div>
 
-                  {/* Factor mini grid */}
-                  <div className="grid grid-cols-4 gap-2 text-center">
+                  {/* 6-factor mini grid */}
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
                     {[
-                      { label: "Porosity", val: r.breakdown.porosity.contribution,        impact: r.breakdown.porosity.impact },
-                      { label: "MC",       val: r.breakdown.moistureContent.contribution, impact: r.breakdown.moistureContent.impact },
-                      { label: "SiO₂",     val: r.breakdown.sio2.contribution,            impact: r.breakdown.sio2.impact },
-                      { label: "CaO",      val: r.breakdown.cao.contribution,             impact: r.breakdown.cao.impact },
+                      { label: "MC",      val: r.breakdown.moistureContent.contribution, impact: r.breakdown.moistureContent.impact },
+                      { label: "Porosity",val: r.breakdown.porosity.contribution,        impact: r.breakdown.porosity.impact },
+                      { label: "Fe₂O₃",  val: r.breakdown.fe2o3.contribution,           impact: r.breakdown.fe2o3.impact },
+                      { label: "Al₂O₃",  val: r.breakdown.al2o3.contribution,           impact: r.breakdown.al2o3.impact },
+                      { label: "SiO₂",   val: r.breakdown.sio2.contribution,            impact: r.breakdown.sio2.impact },
+                      { label: "CaO",    val: r.breakdown.cao.contribution,             impact: r.breakdown.cao.impact },
                     ].map(({ label, val, impact }) => (
                       <div key={label} className="bg-muted/50 rounded p-1.5">
                         <div className="text-xs text-muted-foreground">{label}</div>
@@ -267,7 +295,6 @@ export default function Compare() {
                     ))}
                   </div>
 
-                  {/* Risk flags (first 2) */}
                   {r.riskFlags.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-border">
                       {r.riskFlags.slice(0, 2).map((flag, fi) => (
@@ -283,7 +310,6 @@ export default function Compare() {
             ))}
           </div>
 
-          {/* Summary */}
           <Card className="bg-primary/5 border-primary/20">
             <CardContent className="pt-4 pb-4">
               <div className="text-xs font-semibold text-primary mb-1">Summary Recommendation</div>

@@ -255,28 +255,42 @@ export default function Info() {
           </InfoSection>
 
           <InfoSection id="fe2o3" title="Fe₂O₃ and Al₂O₃">
-            <h3 className="font-semibold text-foreground">Fe₂O₃ — Iron(III) Oxide</h3>
+            <h3 className="font-semibold text-foreground">Fe₂O₃ — Iron(III) Oxide · Model Weight: 15%</h3>
             <p>
-              High Fe₂O₃ content is characteristic of mafic rocks like basalt and dolerite. Iron oxides contribute to adhesivity by:
+              Fe₂O₃ is the third most influential factor in the AggregateIQ model. High iron oxide content is characteristic of mafic rocks like basalt and dolerite. It contributes to adhesivity by:
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>Increasing surface polarity — improving bitumen-aggregate wetting</li>
-              <li>Contributing to the alkaline character of the aggregate surface</li>
+              <li>Increasing surface polarity — improving bitumen-aggregate wetting and film formation</li>
+              <li>Contributing hydrophobic character to the aggregate surface</li>
+              <li>Raising the surface free energy, which promotes stronger bitumen bonding</li>
             </ul>
+            <p>
+              Our experimental data provides clear evidence: Basalt (Fe₂O₃ = 16.70%) achieved RC = 96%, while Limestone (Fe₂O₃ = 0.27%) achieved only RC = 45%. This 16-point difference in iron oxide is one of the clearest chemical signals in our dataset.
+            </p>
             <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono mb-3">
-              <Prop name="Basalt"    value="16.70% — very high (iron-rich volcanic)" />
-              <Prop name="Granite"   value="3.19% — low" />
-              <Prop name="Limestone" value="0.27% — negligible" />
+              <Prop name="Basalt"    value="16.70% — very high → strong hydrophobic surface" />
+              <Prop name="Granite"   value="3.19%  — low → limited iron contribution" />
+              <Prop name="Limestone" value="0.27%  — negligible → risk flag triggered" />
+            </div>
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs">
+              <span className="font-semibold text-primary">Threshold:</span> Fe₂O₃ &lt; 1% triggers a risk flag in the model. Values above 5% are considered good for adhesivity.
             </div>
 
-            <h3 className="font-semibold text-foreground">Al₂O₃ — Aluminium Oxide</h3>
+            <h3 className="font-semibold text-foreground mt-4">Al₂O₃ — Aluminium Oxide · Model Weight: 12%</h3>
             <p>
-              Al₂O₃ (alumina) is present in most silicate rocks. It has a mild positive effect on adhesivity — aluminate surfaces tend to be slightly alkaline and can interact with bitumen carboxyl groups. However, its contribution is generally secondary compared to SiO₂, CaO, and Fe₂O₃.
+              Al₂O₃ (alumina) is the fourth most influential chemical factor. Aluminate surfaces are amphoteric — they can act as either acid or base depending on pH conditions. In bituminous systems, alumina-rich surfaces tend to interact favourably with bitumen carboxyl groups at neutral to slightly alkaline pH.
+            </p>
+            <p>
+              Notably, both Basalt and Granite have similar Al₂O₃ values (8.33% vs 8.91%), while Limestone is much lower (1.39%). This means Al₂O₃ contributes significantly to separating the two good performers from the poor one.
             </p>
             <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono">
-              <Prop name="Basalt"    value="8.33%" />
-              <Prop name="Granite"   value="8.91%" />
-              <Prop name="Limestone" value="1.39%" />
+              <Prop name="Basalt"    value="8.33% — moderate-high" />
+              <Prop name="Granite"   value="8.91% — moderate-high (highest of three)" />
+              <Prop name="Limestone" value="1.39% — low" />
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-xs mt-3">
+              <p className="font-semibold text-foreground mb-1">Why 12% weight for Al₂O₃?</p>
+              <p>Data-driven optimization alone gave Al₂O₃ only 2% weight because Basalt and Granite have similar values (hard to differentiate). However, engineering literature confirms Al₂O₃ has a genuine positive role in adhesion. The 12% weight reflects hybrid data + judgment reasoning.</p>
             </div>
           </InfoSection>
 
@@ -362,16 +376,24 @@ export default function Info() {
             <p>
               The AggregateIQ prediction engine uses a <strong className="text-foreground">Weighted Index Scoring</strong> approach — a structured expert heuristic. It is not a statistical regression model (which would require n ≥ 12 data points).
             </p>
-            <h3 className="font-semibold text-foreground mt-3">Formula</h3>
-            <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs">
-              Score = 0.40×(1 − norm_Porosity) + 0.25×(1 − norm_MC) + 0.20×(1 − norm_SiO₂) + 0.15×norm_CaO
+            <h3 className="font-semibold text-foreground mt-3">Formula (v2 — 6 factors)</h3>
+            <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs leading-relaxed">
+              Score = 0.33×(1−norm_MC) + 0.24×(1−norm_Porosity)<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.15×norm_Fe₂O₃ + 0.12×norm_Al₂O₃<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.10×(1−norm_SiO₂) + 0.06×norm_CaO
+            </div>
+            <div className="flex gap-4 mt-2 text-xs">
+              <span className="text-muted-foreground">Physical total: <strong className="text-foreground">57%</strong> (MC + Porosity)</span>
+              <span className="text-muted-foreground">Chemical total: <strong className="text-foreground">43%</strong> (Fe₂O₃ + Al₂O₃ + SiO₂ + CaO)</span>
             </div>
             <h3 className="font-semibold text-foreground mt-3">Why these weights?</h3>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li><strong className="text-foreground">Porosity — 40%:</strong> Dominant factor per Zhang et al. (2015) and Apeagyei et al. (2017). Confirmed by our Limestone result.</li>
-              <li><strong className="text-foreground">Moisture Content — 25%:</strong> Second strongest physical factor. Pre-existing water directly weakens adhesion.</li>
-              <li><strong className="text-foreground">SiO₂ — 20%:</strong> Acidic chemistry (high SiO₂) reduces bitumen affinity. Negative relationship.</li>
-              <li><strong className="text-foreground">CaO — 15%:</strong> Alkaline chemistry improves adhesion. Positive relationship. Lower weight because it can be overridden by porosity.</li>
+              <li><strong className="text-foreground">MC — 33%:</strong> Pre-existing moisture directly prevents bitumen from bonding to the surface. Strongest single predictor in our data.</li>
+              <li><strong className="text-foreground">Porosity — 24%:</strong> High porosity creates water ingress pathways. Confirmed dominant factor (Zhang et al. 2015, Apeagyei et al. 2017).</li>
+              <li><strong className="text-foreground">Fe₂O₃ — 15%:</strong> Iron oxide promotes hydrophobic surface character and bitumen wetting. Basalt (16.7%) vs Limestone (0.27%) is our clearest chemical signal.</li>
+              <li><strong className="text-foreground">Al₂O₃ — 12%:</strong> Amphoteric surface chemistry aids adhesion. Engineering judgment raised weight from data-driven 2% to 12% based on literature.</li>
+              <li><strong className="text-foreground">SiO₂ — 10%:</strong> Acidic chemistry reduces bitumen affinity at &gt;52%. Granite (68.88%) vs Basalt (47.4%) shows clear 10-point RC drop.</li>
+              <li><strong className="text-foreground">CaO — 6%:</strong> Alkaline chemistry should help — but Limestone case shows porosity can override it entirely. Kept at 6% to acknowledge real but limited role.</li>
             </ul>
             <h3 className="font-semibold text-foreground mt-3">Limitations</h3>
             <ul className="list-disc list-inside space-y-1 pl-2">

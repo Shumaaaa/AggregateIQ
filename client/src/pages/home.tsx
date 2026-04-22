@@ -41,9 +41,9 @@ const GRADES = [
 ];
 
 const EXPERIMENTAL_DATA = [
-  { name: "Basalt",      porosity: "0.49",  mc: "0.025", sio2: "47.4",  cao: "7.28",  rc: 96, grade: "Very Good",    color: "#437A22" },
-  { name: "Granite",     porosity: "1.36",  mc: "0.153", sio2: "68.88", cao: "1.71",  rc: 86, grade: "Acceptable",   color: "#1B474D" },
-  { name: "Limestone*",  porosity: "20.20", mc: "9.848", sio2: "5.01",  cao: "51.90", rc: 45, grade: "Unacceptable", color: "#964219" },
+  { name: "Basalt",     porosity: "0.49",  mc: "0.025", sio2: "47.40", cao: "7.28",  fe2o3: "16.70", al2o3: "8.33", rc: 96, grade: "Very Good",    color: "#437A22" },
+  { name: "Granite",   porosity: "1.36",  mc: "0.153", sio2: "68.88", cao: "1.71",  fe2o3: "3.19",  al2o3: "8.91", rc: 86, grade: "Acceptable",   color: "#1B474D" },
+  { name: "Limestone*",porosity: "20.20", mc: "9.848", sio2: "5.01",  cao: "51.90", fe2o3: "0.27",  al2o3: "1.39", rc: 45, grade: "Unacceptable", color: "#964219" },
 ];
 
 export default function Home() {
@@ -133,6 +133,8 @@ export default function Home() {
                 <th className="text-right px-3 py-2 font-medium">MC</th>
                 <th className="text-right px-3 py-2 font-medium">SiO₂</th>
                 <th className="text-right px-3 py-2 font-medium">CaO</th>
+                <th className="text-right px-3 py-2 font-medium">Fe₂O₃</th>
+                <th className="text-right px-3 py-2 font-medium">Al₂O₃</th>
                 <th className="text-right px-3 py-2 font-medium">RC (%)</th>
                 <th className="text-right px-3 py-2 font-medium">Grade</th>
               </tr>
@@ -145,6 +147,8 @@ export default function Home() {
                   <td className="px-3 py-2 text-right tabular-nums">{row.mc}%</td>
                   <td className="px-3 py-2 text-right tabular-nums">{row.sio2}%</td>
                   <td className="px-3 py-2 text-right tabular-nums">{row.cao}%</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{row.fe2o3}%</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{row.al2o3}%</td>
                   <td className="px-3 py-2 text-right font-semibold tabular-nums" style={{ color: row.color }}>
                     {row.rc}%
                   </td>

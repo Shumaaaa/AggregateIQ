@@ -111,8 +111,9 @@ export function AboutPanel({ open, onClose }: AboutPanelProps) {
                 <div>
                   <p className="font-medium text-foreground text-xs">Prediction Model</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Semi-empirical Weighted Index Scoring — Porosity (40%), Moisture
-                    Content (25%), SiO₂ (20%), CaO (15%). Literature-calibrated weights.
+                    Semi-empirical Weighted Index Scoring (6 factors) — MC (33%), Porosity (24%),
+                    Fe₂O₃ (15%), Al₂O₃ (12%), SiO₂ (10%), CaO (6%).
+                    57% Physical · 43% Chemical. Hybrid data-driven + engineering judgment.
                   </p>
                 </div>
               </div>

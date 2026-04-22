@@ -1,6 +1,7 @@
 /**
- * Predict Page — Main adhesivity predictor
- * User enters aggregate properties → gets RC%, grade, project suitability, factor breakdown
+ * Predict Page — Adhesivity predictor with 6-factor input
+ * Physical: Porosity, Moisture Content (+ Water Absorption proxy)
+ * Chemical: SiO₂, CaO, Fe₂O₃, Al₂O₃
  */
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,19 +20,19 @@ import { RiskFlags } from "@/components/ui-custom/risk-flags";
 import { SectionHeader } from "@/components/ui-custom/section-header";
 import { predictAdhesivity, getProjectSuitability, type AggregateInput } from "@/lib/adhesivity-model";
 
-// Quick-load presets from experimental data
+// Quick-load presets from experimental data (all 6 oxides)
 const PRESETS = [
   {
-    label: "Basalt (Tanga)",
-    values: { porosity: 0.49, moistureContent: 0.025, sio2: 47.4, cao: 7.28, aggregateType: "basalt" },
+    label: "Basalt (Dar es Salaam)",
+    values: { porosity: 0.49, moistureContent: 0.025, sio2: 47.4, cao: 7.28, fe2o3: 16.70, al2o3: 8.33, aggregateType: "basalt" },
   },
   {
-    label: "Granite (Tanga)",
-    values: { porosity: 1.36, moistureContent: 0.153, sio2: 68.88, cao: 1.71, aggregateType: "granite" },
+    label: "Granite (Dar es Salaam)",
+    values: { porosity: 1.36, moistureContent: 0.153, sio2: 68.88, cao: 1.71, fe2o3: 3.19, al2o3: 8.91, aggregateType: "granite" },
   },
   {
     label: "Limestone (Tanga Cement)",
-    values: { porosity: 20.2, moistureContent: 9.848, sio2: 5.01, cao: 51.9, aggregateType: "limestone" },
+    values: { porosity: 20.2, moistureContent: 9.848, sio2: 5.01, cao: 51.9, fe2o3: 0.27, al2o3: 1.39, aggregateType: "limestone" },
   },
 ];
 
@@ -43,6 +44,8 @@ const EMPTY_FORM: FormState = {
   moistureContent: undefined,
   sio2: undefined,
   cao: undefined,
+  fe2o3: undefined,
+  al2o3: undefined,
   aggregateType: "basalt",
   projectType: "highway",
 };
@@ -65,6 +68,31 @@ export default function Predict() {
     setResult(null);
   }
 
+  const field = (
+    id: string,
+    label: string,
+    key: keyof FormState,
+    step = "0.01",
+    note?: string,
+  ) => (
+    <div>
+      <Label className="text-xs" htmlFor={id}>
+        {label}
+        {note && <span className="text-muted-foreground ml-1 font-normal">{note}</span>}
+      </Label>
+      <Input
+        id={id}
+        type="number"
+        step={step}
+        min="0"
+        className="mt-1 h-8 text-sm"
+        value={(form[key] as number | undefined) ?? ""}
+        onChange={e => setForm(f => ({ ...f, [key]: e.target.value ? +e.target.value : undefined }))}
+        data-testid={`input-${id}`}
+      />
+    </div>
+  );
+
   const suitability = result ? getProjectSuitability(result.predictedRC, form.projectType) : null;
 
   return (
@@ -77,7 +105,7 @@ export default function Predict() {
 
       <div className="grid lg:grid-cols-2 gap-6">
 
-        {/* ── Input Panel ─────────────────────────────────────────── */}
+        {/* ── Input Panel ───────────────────────────────────────────── */}
         <div className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
@@ -152,81 +180,25 @@ export default function Predict() {
               {/* Physical properties */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wide">
-                  Physical Properties
+                  Physical Properties — 57% of model
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs" htmlFor="porosity">Porosity (%)</Label>
-                    <Input
-                      id="porosity"
-                      type="number"
-                      step="0.01"
-                      className="mt-1 h-8 text-sm"
-                      value={form.porosity ?? ""}
-                      onChange={e => setForm(f => ({ ...f, porosity: e.target.value ? +e.target.value : undefined }))}
-                      data-testid="input-porosity"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs" htmlFor="wa">
-                      Water Absorption (%)
-                      <span className="text-muted-foreground ml-1 font-normal">if no porosity</span>
-                    </Label>
-                    <Input
-                      id="wa"
-                      type="number"
-                      step="0.001"
-                      className="mt-1 h-8 text-sm"
-                      value={form.waterAbsorption ?? ""}
-                      onChange={e => setForm(f => ({ ...f, waterAbsorption: e.target.value ? +e.target.value : undefined }))}
-                      data-testid="input-water-absorption"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs" htmlFor="mc">Moisture Content (%)</Label>
-                    <Input
-                      id="mc"
-                      type="number"
-                      step="0.001"
-                      className="mt-1 h-8 text-sm"
-                      value={form.moistureContent ?? ""}
-                      onChange={e => setForm(f => ({ ...f, moistureContent: e.target.value ? +e.target.value : undefined }))}
-                      data-testid="input-moisture-content"
-                    />
-                  </div>
+                  {field("porosity",         "Porosity (%)",          "porosity",         "0.01")}
+                  {field("water-absorption",  "Water Absorption (%)",  "waterAbsorption",  "0.001", "if no porosity")}
+                  {field("moisture-content",  "Moisture Content (%)",  "moistureContent",  "0.001")}
                 </div>
               </div>
 
               {/* Chemical properties */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wide">
-                  Chemical Properties (XRF)
+                  Chemical Properties (XRF) — 43% of model
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs" htmlFor="sio2">SiO₂ (%)</Label>
-                    <Input
-                      id="sio2"
-                      type="number"
-                      step="0.01"
-                      className="mt-1 h-8 text-sm"
-                      value={form.sio2 ?? ""}
-                      onChange={e => setForm(f => ({ ...f, sio2: e.target.value ? +e.target.value : undefined }))}
-                      data-testid="input-sio2"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs" htmlFor="cao">CaO (%)</Label>
-                    <Input
-                      id="cao"
-                      type="number"
-                      step="0.01"
-                      className="mt-1 h-8 text-sm"
-                      value={form.cao ?? ""}
-                      onChange={e => setForm(f => ({ ...f, cao: e.target.value ? +e.target.value : undefined }))}
-                      data-testid="input-cao"
-                    />
-                  </div>
+                  {field("fe2o3", "Fe₂O₃ (%)", "fe2o3", "0.01")}
+                  {field("al2o3", "Al₂O₃ (%)", "al2o3", "0.01")}
+                  {field("sio2",  "SiO₂ (%)",  "sio2",  "0.01")}
+                  {field("cao",   "CaO (%)",   "cao",   "0.01")}
                 </div>
               </div>
 
@@ -244,7 +216,7 @@ export default function Predict() {
           </Card>
         </div>
 
-        {/* ── Results Panel ────────────────────────────────────────── */}
+        {/* ── Results Panel ─────────────────────────────────────────── */}
         <div className="space-y-4">
           {!result ? (
             <Card className="flex items-center justify-center min-h-[320px]">
@@ -260,7 +232,7 @@ export default function Predict() {
             </Card>
           ) : (
             <>
-              {/* Grade + gauge */}
+              {/* Grade + Gauge */}
               <Card>
                 <CardContent className="pt-5 pb-4">
                   <div className="flex items-start justify-between mb-2">
@@ -311,12 +283,14 @@ export default function Predict() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2.5">
-                  <ContribBar label="Porosity (40%)"  contribution={result.breakdown.porosity.contribution}        impact={result.breakdown.porosity.impact} />
-                  <ContribBar label="Moisture (25%)"  contribution={result.breakdown.moistureContent.contribution} impact={result.breakdown.moistureContent.impact} />
-                  <ContribBar label="SiO₂ (20%)"      contribution={result.breakdown.sio2.contribution}            impact={result.breakdown.sio2.impact} />
-                  <ContribBar label="CaO (15%)"        contribution={result.breakdown.cao.contribution}             impact={result.breakdown.cao.impact} />
+                  <ContribBar label="MC (33%)"       contribution={result.breakdown.moistureContent.contribution} impact={result.breakdown.moistureContent.impact} />
+                  <ContribBar label="Porosity (24%)" contribution={result.breakdown.porosity.contribution}        impact={result.breakdown.porosity.impact} />
+                  <ContribBar label="Fe₂O₃ (15%)"    contribution={result.breakdown.fe2o3.contribution}           impact={result.breakdown.fe2o3.impact} />
+                  <ContribBar label="Al₂O₃ (12%)"    contribution={result.breakdown.al2o3.contribution}           impact={result.breakdown.al2o3.impact} />
+                  <ContribBar label="SiO₂ (10%)"     contribution={result.breakdown.sio2.contribution}            impact={result.breakdown.sio2.impact} />
+                  <ContribBar label="CaO (6%)"        contribution={result.breakdown.cao.contribution}             impact={result.breakdown.cao.impact} />
                   <div className="text-xs text-muted-foreground pt-1 border-t border-border">
-                    Weights calibrated from experimental data + literature consensus
+                    57% Physical (MC + Porosity) · 43% Chemical (Fe₂O₃ + Al₂O₃ + SiO₂ + CaO)
                   </div>
                 </CardContent>
               </Card>
@@ -334,10 +308,10 @@ export default function Predict() {
           <div className="flex items-start gap-2">
             <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              <strong>Model basis:</strong> Weighted index scoring calibrated from 3 experimental data points
-              (Basalt, Granite, Limestone — Dar es Salaam, 2026) and literature consensus
-              (Kim et al. 2023; Apeagyei et al. 2017; Zhang et al. 2015). Results marked
-              "Index-based" are indicative estimates only.
+              <strong>Model basis:</strong> Weighted index scoring (6 factors) calibrated from 3 experimental data points
+              (Basalt, Granite, Limestone — Dar es Salaam, 2026) and literature consensus.
+              Hybrid data-driven + engineering judgment weights. MAE = 6.65% on calibration set.
+              Results marked "Index-based" are indicative estimates only.
             </p>
           </div>
         </CardContent>
