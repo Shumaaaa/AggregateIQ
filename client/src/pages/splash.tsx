@@ -69,7 +69,7 @@ export default function Splash() {
 
         {/* Welcome text */}
         <p className="text-white/70 text-sm font-medium tracking-widest uppercase mb-3 drop-shadow">
-          Tanzania Pavement Engineering · 2026
+          Civil Works · 2026
         </p>
         <h1 className="text-white text-4xl sm:text-5xl font-bold tracking-tight mb-3 drop-shadow-lg">
           Welcome to AggregateIQ
