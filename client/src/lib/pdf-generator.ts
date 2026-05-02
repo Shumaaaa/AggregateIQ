@@ -37,14 +37,16 @@ function hexToRgb(hex: string): [number,number,number] {
 }
 
 // ── Page geometry (mm) ────────────────────────────────────────────────────────
-const MARGIN      = 25.4;
+const MARGIN      = 25.4;          // left/right margin = 25.4mm (2.54cm)
 const PAGE_W      = 210;
 const PAGE_H      = 297;
-const CONTENT_W   = PAGE_W - MARGIN * 2;   // 159.2 mm
-const HEADER_H    = 16;
-const FOOTER_H    = 28;      // generous reserve — prevents last line overflowing onto next page
-const BODY_TOP    = MARGIN + HEADER_H + 6;
-const BODY_BOTTOM = PAGE_H - MARGIN - FOOTER_H;
+const CONTENT_W   = PAGE_W - MARGIN * 2;   // 159.2 mm usable width
+const HEADER_H    = 16;            // teal header bar height
+const TOP_GAP     = 15;            // 1.5cm gap between header bar and first content line
+const BOT_GAP     = 15;            // 1.5cm gap between last content line and footer bar
+const FOOTER_BAR  = 12;            // footer bar height
+const BODY_TOP    = HEADER_H + TOP_GAP;              // 31mm from top of page
+const BODY_BOTTOM = PAGE_H - FOOTER_BAR - BOT_GAP;  // 270mm from top — 27mm from bottom
 
 // ── Font helpers ──────────────────────────────────────────────────────────────
 const F = "times";
@@ -134,18 +136,23 @@ function drawHeader(pdf: jsPDF, pageNum: number) {
 
 // ── Footer ────────────────────────────────────────────────────────────────────
 function drawFooter(pdf: jsPDF, pageNum: number) {
-  const fy = PAGE_H - MARGIN - 10;
+  // Footer bar sits at the very bottom: PAGE_H - FOOTER_BAR
+  const barY = PAGE_H - FOOTER_BAR;
+  pdf.setFillColor(...C.primary);
+  pdf.setGState(new (pdf as any).GState({ opacity: 0.08 }));
+  pdf.rect(0, barY, PAGE_W, FOOTER_BAR, "F");
+  pdf.setGState(new (pdf as any).GState({ opacity: 1.0 }));
   pdf.setDrawColor(...C.border);
   pdf.setLineWidth(0.3);
-  pdf.line(MARGIN, fy, PAGE_W - MARGIN, fy);
+  pdf.line(0, barY, PAGE_W, barY);
   pdf.setFont(F, "normal");
   pdf.setFontSize(8);
   pdf.setTextColor(...C.muted);
   pdf.text(
-    "AggregateIQ \u2014 For engineering assessment purposes only. Verify with laboratory testing before final specification.",
-    MARGIN, fy + 5
+    "AggregateIQ \u2014 For engineering assessment purposes only.",
+    MARGIN, barY + 8
   );
-  pdf.text(`\u2014 ${pageNum} \u2014`, PAGE_W / 2, fy + 5, { align: "center" });
+  pdf.text(`Page ${pageNum}`, PAGE_W - MARGIN, barY + 8, { align: "right" });
   pdf.setTextColor(...C.text);
 }
 
