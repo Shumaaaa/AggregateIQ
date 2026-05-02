@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, FlaskConical, Info, AlertTriangle } from "lucide-react";
+import { CheckCircle, XCircle, FlaskConical, Info, AlertTriangle, FileDown } from "lucide-react";
 
 import { BackHomeButtons } from "@/components/ui-custom/back-home-buttons";
 import { GaugeMeter } from "@/components/ui-custom/gauge-meter";
@@ -20,7 +20,9 @@ import { RiskFlags } from "@/components/ui-custom/risk-flags";
 import { SectionHeader } from "@/components/ui-custom/section-header";
 import { StoneRecognitionCard } from "@/components/ui-custom/stone-recognition-card";
 import { MissingVarsModal } from "@/components/ui-custom/missing-vars-modal";
-import { predictAdhesivity, getProjectSuitability, type AggregateInput } from "@/lib/adhesivity-model";
+import { predictAdhesivity, getProjectSuitability, type AggregateInput, type AdhesivityResult } from "@/lib/adhesivity-model";
+import { PdfEngineerModal, type EngineerInfo } from "@/components/pdf/pdf-engineer-modal";
+import { generatePdfReport } from "@/lib/pdf-generator";
 
 // Quick-load presets from experimental data (all 6 oxides)
 const PRESETS = [
@@ -56,6 +58,8 @@ export default function Predict() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [result, setResult] = useState<ReturnType<typeof predictAdhesivity> | null>(null);
   const [pendingAnalysis, setPendingAnalysis] = useState<ReturnType<typeof predictAdhesivity> | null>(null);
+  const [showPdfModal,   setShowPdfModal]   = useState(false);
+  const [generating,     setGenerating]     = useState(false);
 
   function loadPreset(idx: number) {
     setForm({ ...EMPTY_FORM, ...PRESETS[idx].values });
@@ -86,6 +90,20 @@ export default function Predict() {
     setForm(EMPTY_FORM);
     setResult(null);
     setPendingAnalysis(null);
+  }
+
+  async function handleGeneratePdf(info: EngineerInfo) {
+    if (!result) return;
+    setGenerating(true);
+    try {
+      const aggName = form.aggregateType
+        ? form.aggregateType.charAt(0).toUpperCase() + form.aggregateType.slice(1)
+        : "Aggregate";
+      await generatePdfReport(result as AdhesivityResult, info, aggName);
+    } finally {
+      setGenerating(false);
+      setShowPdfModal(false);
+    }
   }
 
   const field = (
@@ -288,6 +306,20 @@ export default function Predict() {
                 </CardContent>
               </Card>
 
+              {/* Save PDF button */}
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-8 gap-1.5"
+                  onClick={() => setShowPdfModal(true)}
+                  data-testid="button-save-pdf"
+                >
+                  <FileDown className="w-3.5 h-3.5" />
+                  Save PDF Report
+                </Button>
+              </div>
+
               {/* Project suitability */}
               {suitability && (
                 <Card>
@@ -348,6 +380,15 @@ export default function Predict() {
           missingVars={pendingAnalysis.missingVars}
           onContinue={handleModalContinue}
           onGoBack={handleModalGoBack}
+        />
+      )}
+
+      {/* PDF engineer modal */}
+      {showPdfModal && (
+        <PdfEngineerModal
+          onGenerate={handleGeneratePdf}
+          onClose={() => setShowPdfModal(false)}
+          generating={generating}
         />
       )}
 
