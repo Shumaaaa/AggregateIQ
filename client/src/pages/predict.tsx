@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, FlaskConical, Info } from "lucide-react";
+import { CheckCircle, XCircle, FlaskConical, Info, AlertTriangle } from "lucide-react";
 
 import { BackHomeButtons } from "@/components/ui-custom/back-home-buttons";
 import { GaugeMeter } from "@/components/ui-custom/gauge-meter";
@@ -19,6 +19,7 @@ import { GradeBadge } from "@/components/ui-custom/grade-badge";
 import { RiskFlags } from "@/components/ui-custom/risk-flags";
 import { SectionHeader } from "@/components/ui-custom/section-header";
 import { StoneRecognitionCard } from "@/components/ui-custom/stone-recognition-card";
+import { MissingVarsModal } from "@/components/ui-custom/missing-vars-modal";
 import { predictAdhesivity, getProjectSuitability, type AggregateInput } from "@/lib/adhesivity-model";
 
 // Quick-load presets from experimental data (all 6 oxides)
@@ -54,19 +55,37 @@ const EMPTY_FORM: FormState = {
 export default function Predict() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [result, setResult] = useState<ReturnType<typeof predictAdhesivity> | null>(null);
+  const [pendingAnalysis, setPendingAnalysis] = useState<ReturnType<typeof predictAdhesivity> | null>(null);
 
   function loadPreset(idx: number) {
     setForm({ ...EMPTY_FORM, ...PRESETS[idx].values });
     setResult(null);
+    setPendingAnalysis(null);
   }
 
   function handleAnalyze() {
-    setResult(predictAdhesivity(form));
+    const computed = predictAdhesivity(form);
+    if (computed.incomplete) {
+      // Show modal — hold results until user acknowledges
+      setPendingAnalysis(computed);
+    } else {
+      setResult(computed);
+    }
+  }
+
+  function handleModalContinue() {
+    setResult(pendingAnalysis);
+    setPendingAnalysis(null);
+  }
+
+  function handleModalGoBack() {
+    setPendingAnalysis(null);
   }
 
   function handleReset() {
     setForm(EMPTY_FORM);
     setResult(null);
+    setPendingAnalysis(null);
   }
 
   const field = (
@@ -233,6 +252,23 @@ export default function Predict() {
             </Card>
           ) : (
             <>
+              {/* Incomplete data banner */}
+              {result.incomplete && (
+                <div
+                  className="flex items-start gap-2.5 rounded-lg border px-3.5 py-3 text-xs"
+                  style={{ borderColor: "#D1990060", background: "#D1990012" }}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-[#D19900]" />
+                  <div>
+                    <span className="font-semibold text-foreground">Reduced accuracy — </span>
+                    <span className="text-muted-foreground">
+                      {result.missingVars.join(" and ")} {result.missingVars.length > 1 ? "were" : "was"} not provided.
+                      Results are indicative only. Provide missing values for a full analysis.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Grade + Gauge */}
               <Card>
                 <CardContent className="pt-5 pb-4">
@@ -305,6 +341,15 @@ export default function Predict() {
           )}
         </div>
       </div>
+
+      {/* Missing variables modal */}
+      {pendingAnalysis && (
+        <MissingVarsModal
+          missingVars={pendingAnalysis.missingVars}
+          onContinue={handleModalContinue}
+          onGoBack={handleModalGoBack}
+        />
+      )}
 
       {/* Model disclaimer */}
       <Card className="bg-muted/40 border-dashed">
