@@ -133,6 +133,12 @@ export default function Predict() {
 
   const suitability = result ? getProjectSuitability(result.predictedRC, form.projectType) : null;
 
+  // True when every numeric input is empty/zero — used to block PDF generation
+  const allFieldsEmpty = [
+    form.porosity, form.moistureContent, form.waterAbsorption,
+    form.sio2, form.cao, form.fe2o3, form.al2o3,
+  ].every(v => v === undefined || v === 0 || v === null);
+
   return (
     <div className="space-y-6">
       <BackHomeButtons backHref="/home" backLabel="Home" />
@@ -389,6 +395,7 @@ export default function Predict() {
           onGenerate={handleGeneratePdf}
           onClose={() => setShowPdfModal(false)}
           generating={generating}
+          allFieldsEmpty={allFieldsEmpty}
         />
       )}
 

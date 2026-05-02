@@ -21,9 +21,10 @@ interface PdfEngineerModalProps {
   onGenerate: (info: EngineerInfo) => void;
   onClose: () => void;
   generating: boolean;
+  allFieldsEmpty: boolean;  // true when all input fields are 0 or undefined
 }
 
-export function PdfEngineerModal({ onGenerate, onClose, generating }: PdfEngineerModalProps) {
+export function PdfEngineerModal({ onGenerate, onClose, generating, allFieldsEmpty }: PdfEngineerModalProps) {
   const today = new Date().toISOString().split("T")[0];
   const [name,    setName]    = useState("");
   const [company, setCompany] = useState("");
@@ -32,6 +33,7 @@ export function PdfEngineerModal({ onGenerate, onClose, generating }: PdfEnginee
 
   function handleSubmit() {
     if (!name.trim()) return;
+    if (allFieldsEmpty) return;   // blocked — no data entered
     onGenerate({ name: name.trim(), company: company.trim(), date, meterStyle: meter });
   }
 
@@ -71,6 +73,23 @@ export function PdfEngineerModal({ onGenerate, onClose, generating }: PdfEnginee
 
           {/* Body */}
           <div className="px-5 py-4 space-y-4">
+
+            {/* No data warning */}
+            {allFieldsEmpty && (
+              <div
+                className="flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-xs"
+                style={{ borderColor: "#96421980", background: "#96421910" }}
+              >
+                <span className="text-[#964219] font-bold mt-0.5">&#9888;</span>
+                <div>
+                  <span className="font-semibold text-foreground">No aggregate data entered. </span>
+                  <span className="text-muted-foreground">
+                    Return to the predictor and enter at least one property value before generating a report.
+                    A PDF generated without any data will not contain meaningful results.
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Engineer name */}
             <div>
@@ -152,7 +171,7 @@ export function PdfEngineerModal({ onGenerate, onClose, generating }: PdfEnginee
             <Button
               className="flex-1 text-xs h-9"
               onClick={handleSubmit}
-              disabled={!name.trim() || generating}
+              disabled={!name.trim() || generating || allFieldsEmpty}
               data-testid="button-generate-pdf"
             >
               <FileDown className="w-3.5 h-3.5 mr-1.5" />
