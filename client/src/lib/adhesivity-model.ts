@@ -1,30 +1,34 @@
 /**
- * AggregateIQ — Adhesivity Model Engine v2
+ * AggregateIQ — Adhesivity Model Engine v3
  *
- * Based on experimental data (Basalt, Granite, Limestone — Dar es Salaam, 2026)
- * + literature calibration (Kim et al. 2023; Apeagyei et al. 2017; Zhang et al. 2015)
+ * Based on experimental data (Basalt — Ntyuka Quarry Dodoma, Granite — Chinangali Quarry Dodoma,
+ * Limestone — Dar es Salaam, 2026) calibrated against Eng. Mwajabu A. Senzota dissertation.
  *
- * Model: Weighted Index Scoring (Semi-empirical, Approach 2)
- * RC_score = w1*(1−norm_porosity) + w2*(1−norm_mc) + w3*(1−norm_sio2)
- *          + w4*(norm_cao) + w5*(norm_fe2o3) + w6*(norm_al2o3)
+ * Model: Composite Weighted Index Scoring (57% Physical / 43% Chemical)
  *
- * Weights — hybrid data-driven + engineering judgment (57% Physical / 43% Chemical):
- *   MC       : 0.33  — dominant physical factor; moisture prevents bitumen bonding
- *   Porosity : 0.24  — water ingress path; Zhang et al. 2015, Apeagyei et al. 2017
- *   Fe₂O₃   : 0.15  — iron oxide promotes hydrophobic surface; confirmed by Basalt data
- *   Al₂O₃   : 0.12  — amphoteric oxide; aids adhesion in siliceous aggregates
- *   SiO₂    : 0.10  — acidic chemistry reduces affinity (>52% threshold)
- *   CaO     : 0.06  — alkaline benefit present but overridden by porosity in Limestone
+ * Final weights — derived from standalone regression R² hierarchy + literature (Ignatavicius et al. 2021;
+ * Zhang et al. 2015; Fei et al. 2023):
+ *   MC       : 0.33  — strongest single predictor (R²=0.9819); direct moisture stripping mechanism
+ *   Porosity : 0.24  — second strongest (R²=0.9785); water ingress pathway
+ *   Al₂O₃   : 0.18  — best chemical predictor (R²=0.9362); surface polarity + base character
+ *   CaO      : 0.14  — second chemical predictor (R²=0.9196); hydrophilicity marker (Lesueur et al. 2013)
+ *   SiO₂    : 0.07  — moderate predictor (R²=0.7506); secondary role (Moraes et al. 2004)
+ *   Fe₂O₃   : 0.04  — weakest predictor (R²=0.5911); limited generalisability (Plancher et al. 1977)
  *
- * Note: This is a structured expert heuristic, not a statistical regression model.
- * Confidence increases significantly with n ≥ 12 data points.
+ * Normalization: calibration dataset min/max (Table 4.12 of dissertation)
  * MAE on calibration dataset (n=3): 6.65%
+ *
+ * Regression equations (single-predictor, operational):
+ *   Porosity model : A = 93.31 − 2.40 × P        (R²=0.9785, F=45.60)
+ *   MC model       : A = 93.00 − 21.40 × MC       (R²=0.9819, F=54.30)
+ *
+ * Confidence interval: ±10% (90% confidence) based on calibration dataset spread.
  */
 
 export interface AggregateInput {
-  porosity?: number;        // %
+  porosity?: number;        // % — REQUIRED for full prediction
+  moistureContent?: number; // % — REQUIRED for full prediction
   waterAbsorption?: number; // % (proxy if no porosity)
-  moistureContent?: number; // %
   sio2?: number;            // %
   cao?: number;             // %
   fe2o3?: number;           // %
@@ -34,10 +38,15 @@ export interface AggregateInput {
 
 export interface AdhesivityResult {
   predictedRC: number;
+  rcLow: number;           // 90% confidence lower bound
+  rcHigh: number;          // 90% confidence upper bound
   grade: string;
   gradeColor: string;
   score: number;
   confidence: "experimental" | "index-based";
+  incomplete: boolean;     // true if porosity or MC are missing
+  missingVars: string[];   // list of missing critical variables
+  stoneType: string;       // recognised stone type or "Undefined"
   breakdown: {
     porosity:       { value: number; contribution: number; impact: "positive" | "negative" | "neutral" };
     moistureContent:{ value: number; contribution: number; impact: "positive" | "negative" | "neutral" };
@@ -50,134 +59,199 @@ export interface AdhesivityResult {
   recommendation: string;
 }
 
-// ── Reference ranges (literature + experimental) ───────────────────────────
-const REF = {
-  porosity:        { min: 0.1,  max: 22,  goodBelow: 2.0, badAbove: 8.0 },
-  waterAbsorption: { min: 0.1,  max: 12,  goodBelow: 1.0, badAbove: 4.0 },
-  moistureContent: { min: 0.0,  max: 12,  goodBelow: 0.5, badAbove: 5.0 },
-  sio2:            { min: 3,    max: 80,  goodBelow: 52,  badAbove: 65  },
-  cao:             { min: 0,    max: 55,  goodAbove: 5,   poorBelow: 1  },
-  fe2o3:           { min: 0,    max: 20,  goodAbove: 5,   poorBelow: 1  },
-  al2o3:           { min: 0,    max: 15,  goodAbove: 5,   poorBelow: 1  },
+// ── Calibration dataset (normalization bounds — Table 4.12) ────────────────
+// These are the EXACT min/max from the three experimental aggregates.
+const CALIB = {
+  mc:    { min: 0.0245,  max: 2.2531  },   // Basalt=min, Limestone=max
+  p:     { min: 0.490,   max: 20.200  },   // Basalt=min, Limestone=max
+  al2o3: { min: 1.39,    max: 8.91    },   // Limestone=min, Granite=max
+  cao:   { min: 1.71,    max: 51.90   },   // Granite=min, Limestone=max
+  sio2:  { min: 5.01,    max: 68.88   },   // Limestone=min, Granite=max
+  fe2o3: { min: 0.27,    max: 16.70   },   // Limestone=min, Basalt=max
 };
 
-// ── Experimental calibration data ─────────────────────────────────────────
+// ── Experimental calibration data (Table 4.1) ──────────────────────────────
 const EXPERIMENTAL = [
-  { type: "basalt",    porosity: 0.49,  mc: 0.0245, sio2: 47.40, cao: 7.28,  fe2o3: 16.70, al2o3: 8.33,  rc: 96 },
-  { type: "granite",   porosity: 1.36,  mc: 0.1526, sio2: 68.88, cao: 1.71,  fe2o3: 3.19,  al2o3: 8.91,  rc: 86 },
-  { type: "limestone", porosity: 20.20, mc: 9.848,  sio2: 5.01,  cao: 51.90, fe2o3: 0.27,  al2o3: 1.39,  rc: 45 },
+  { type: "Basalt",    porosity: 0.49,  mc: 0.0245, sio2: 47.40, cao: 7.28,  fe2o3: 16.70, al2o3: 8.33, rc: 96 },
+  { type: "Granite",  porosity: 1.36,  mc: 0.1526, sio2: 68.88, cao: 1.71,  fe2o3: 3.19,  al2o3: 8.91, rc: 86 },
+  { type: "Limestone",porosity: 20.20, mc: 2.2531, sio2: 5.01,  cao: 51.90, fe2o3: 0.27,  al2o3: 1.39, rc: 45 },
 ];
 
-// ── Normalization helpers ──────────────────────────────────────────────────
-function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
-function normalize(value: number, min: number, max: number): number {
-  return clamp((value - min) / (max - min + 1e-9), 0, 1);
+// ── Model weights (Table 4.11) ─────────────────────────────────────────────
+const W = {
+  mc:    0.33,
+  p:     0.24,
+  al2o3: 0.18,
+  cao:   0.14,
+  sio2:  0.07,
+  fe2o3: 0.04,
+};
+
+// ── Confidence interval half-width (90% confidence = ±10pp) ───────────────
+const CI_HALF = 10;
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function clamp(v: number, lo: number, hi: number) { return Math.max(lo, Math.min(hi, v)); }
+
+/** Inverse normalizer: higher value → lower adhesivity score → N = 0 at max */
+function normInverse(x: number, min: number, max: number): number {
+  return clamp((max - x) / (max - min + 1e-9), 0, 1);
 }
 
-// ── Model weights ──────────────────────────────────────────────────────────
-const W = {
-  porosity: 0.24,
-  mc:       0.33,
-  sio2:     0.10,
-  cao:      0.06,
-  fe2o3:    0.15,
-  al2o3:    0.12,
-};
+/** Direct normalizer: higher value → higher adhesivity score → N = 0 at min */
+function normDirect(x: number, min: number, max: number): number {
+  return clamp((x - min) / (max - min + 1e-9), 0, 1);
+}
+
+// ── Stone recognition ──────────────────────────────────────────────────────
+/**
+ * Identifies aggregate type based on 10% tolerance window around calibration values.
+ * Returns "Basalt", "Granite", "Limestone", or "Undefined".
+ */
+export function recogniseStone(input: AggregateInput): string {
+  const tol = 0.10; // 10% tolerance each side = 90% confidence window
+
+  for (const exp of EXPERIMENTAL) {
+    const checks: boolean[] = [];
+
+    if (input.porosity !== undefined)
+      checks.push(Math.abs(input.porosity - exp.porosity) / (exp.porosity + 0.01) <= tol);
+    if (input.moistureContent !== undefined)
+      checks.push(Math.abs(input.moistureContent - exp.mc) / (exp.mc + 0.01) <= tol);
+    if (input.sio2 !== undefined)
+      checks.push(Math.abs(input.sio2 - exp.sio2) / (exp.sio2 + 0.01) <= tol);
+    if (input.cao !== undefined)
+      checks.push(Math.abs(input.cao - exp.cao) / (exp.cao + 0.1) <= tol);
+    if (input.fe2o3 !== undefined)
+      checks.push(Math.abs(input.fe2o3 - exp.fe2o3) / (exp.fe2o3 + 0.1) <= tol);
+    if (input.al2o3 !== undefined)
+      checks.push(Math.abs(input.al2o3 - exp.al2o3) / (exp.al2o3 + 0.1) <= tol);
+
+    // Need at least 3 variables checked, and ≥70% of them within tolerance
+    if (checks.length >= 3 && checks.filter(Boolean).length / checks.length >= 0.70) {
+      return exp.type;
+    }
+  }
+  return "Undefined";
+}
+
+// ── Grade assignment (5-level ASTM D3625-based — Table 4.15) ──────────────
+export function getGrade(rc: number): { grade: string; gradeColor: string } {
+  if      (rc >= 95) return { grade: "Very Good",    gradeColor: "#437A22" };
+  else if (rc >= 85) return { grade: "Good",         gradeColor: "#1B474D" };
+  else if (rc >= 70) return { grade: "Acceptable",   gradeColor: "#20808D" };
+  else if (rc >= 50) return { grade: "Borderline",   gradeColor: "#D19900" };
+  else               return { grade: "Unacceptable", gradeColor: "#964219" };
+}
 
 // ── Main prediction function ───────────────────────────────────────────────
 export function predictAdhesivity(input: AggregateInput): AdhesivityResult {
-  // Resolve porosity (or use WA proxy)
-  const rawPorosity = input.porosity ?? (input.waterAbsorption ? input.waterAbsorption * 2.5 : undefined);
-  const rawMC    = input.moistureContent ?? 0;
-  const rawSio2  = input.sio2   ?? 50;
-  const rawCao   = input.cao    ?? 3;
-  const rawFe2o3 = input.fe2o3  ?? 5;
-  const rawAl2o3 = input.al2o3  ?? 5;
 
-  // ── Experimental confidence check ───────────────────────────────────────
+  // ── 1. Missing variable detection ──────────────────────────────────────
+  const missingVars: string[] = [];
+  if (input.porosity === undefined && input.waterAbsorption === undefined)
+    missingVars.push("Porosity (%)");
+  if (input.moistureContent === undefined)
+    missingVars.push("Moisture Content (%)");
+
+  const incomplete = missingVars.length > 0;
+
+  // ── 2. Resolve values (WA proxy for porosity if needed) ────────────────
+  const rawP    = input.porosity ?? (input.waterAbsorption !== undefined ? input.waterAbsorption * 2.5 : undefined);
+  const rawMC   = input.moistureContent ?? 0;
+  const rawSio2 = input.sio2   ?? 50;
+  const rawCao  = input.cao    ?? 3;
+  const rawFe   = input.fe2o3  ?? 5;
+  const rawAl   = input.al2o3  ?? 5;
+
+  // ── 3. Stone recognition ────────────────────────────────────────────────
+  const stoneType = recogniseStone(input);
+
+  // ── 4. Experimental confidence check ───────────────────────────────────
   let isExperimental = false;
-  for (const exp of EXPERIMENTAL) {
-    const pDiff  = rawPorosity ? Math.abs((rawPorosity - exp.porosity) / (exp.porosity + 0.01)) : 1;
-    const mcDiff = Math.abs((rawMC - exp.mc) / (exp.mc + 0.01));
-    const siDiff = Math.abs((rawSio2 - exp.sio2) / (exp.sio2 + 0.01));
-    const caDiff = Math.abs((rawCao - exp.cao) / (exp.cao + 0.1));
-    const feDiff = Math.abs((rawFe2o3 - exp.fe2o3) / (exp.fe2o3 + 0.1));
-    const alDiff = Math.abs((rawAl2o3 - exp.al2o3) / (exp.al2o3 + 0.1));
-    if (pDiff < 0.15 && mcDiff < 0.20 && siDiff < 0.10 && caDiff < 0.15 && feDiff < 0.20 && alDiff < 0.20) {
-      isExperimental = true;
-      break;
-    }
+  if (stoneType !== "Undefined") {
+    isExperimental = true;
   }
 
-  // ── Normalized scores (0=worst, 1=best for adhesion) ────────────────────
-  const porosityNorm = rawPorosity !== undefined
-    ? 1 - normalize(rawPorosity, REF.porosity.min, REF.porosity.max)
-    : 0.8;
-  const mcNorm    = 1 - normalize(rawMC,    REF.moistureContent.min, REF.moistureContent.max);
-  const sio2Norm  = 1 - normalize(rawSio2,  REF.sio2.min, REF.sio2.max);
-  const caoNorm   =     normalize(rawCao,   REF.cao.poorBelow, REF.cao.goodAbove + 10);
-  const fe2o3Norm =     normalize(rawFe2o3, REF.fe2o3.poorBelow, REF.fe2o3.goodAbove + 10);
-  const al2o3Norm =     normalize(rawAl2o3, REF.al2o3.poorBelow, REF.al2o3.goodAbove + 10);
+  // ── 5. Normalized scores (0=worst, 1=best for adhesion) ────────────────
+  const pNorm    = rawP !== undefined ? normInverse(rawP,   CALIB.p.min,    CALIB.p.max)    : 0.8;
+  const mcNorm   = normInverse(rawMC,   CALIB.mc.min,   CALIB.mc.max);
+  const al2o3N   = normDirect (rawAl,   CALIB.al2o3.min, CALIB.al2o3.max);
+  const caoN     = normInverse(rawCao,  CALIB.cao.min,  CALIB.cao.max);
+  const sio2N    = normDirect (rawSio2, CALIB.sio2.min, CALIB.sio2.max);
+  const fe2o3N   = normDirect (rawFe,   CALIB.fe2o3.min, CALIB.fe2o3.max);
 
-  // ── Weighted score (0–100) ───────────────────────────────────────────────
-  const score = (
-    W.porosity * porosityNorm +
-    W.mc       * mcNorm       +
-    W.sio2     * sio2Norm     +
-    W.cao      * caoNorm      +
-    W.fe2o3    * fe2o3Norm    +
-    W.al2o3    * al2o3Norm
-  ) * 100;
+  // ── 6. Weighted composite score (0–100) ────────────────────────────────
+  const score = clamp((
+    W.mc    * mcNorm  +
+    W.p     * pNorm   +
+    W.al2o3 * al2o3N  +
+    W.cao   * caoN    +
+    W.sio2  * sio2N   +
+    W.fe2o3 * fe2o3N
+  ) * 100, 0, 100);
 
-  // Map score → RC% (anchored to experimental range 45–96%)
-  const predictedRC = clamp(40 + (score / 100) * 62, 30, 100);
+  // Map composite score → RC% anchored to calibration range (45–96%)
+  const predictedRC = clamp(Math.round(45 + (score / 100) * 51), 0, 100);
 
-  // ── Grade ────────────────────────────────────────────────────────────────
-  let grade: string, gradeColor: string;
-  if      (predictedRC >= 95) { grade = "Very Good";     gradeColor = "#437A22"; }
-  else if (predictedRC >= 80) { grade = "Acceptable";    gradeColor = "#1B474D"; }
-  else if (predictedRC >= 60) { grade = "Marginal";      gradeColor = "#D19900"; }
-  else                         { grade = "Unacceptable";  gradeColor = "#964219"; }
+  // ── 7. Confidence interval (±10pp at 90% confidence) ───────────────────
+  const rcLow  = clamp(predictedRC - CI_HALF, 0, 100);
+  const rcHigh = clamp(predictedRC + CI_HALF, 0, 100);
 
-  // ── Risk flags ───────────────────────────────────────────────────────────
+  // ── 8. Grade ────────────────────────────────────────────────────────────
+  const { grade, gradeColor } = getGrade(predictedRC);
+
+  // ── 9. Risk flags ───────────────────────────────────────────────────────
   const riskFlags: string[] = [];
-  if (rawPorosity !== undefined && rawPorosity > REF.porosity.badAbove)
-    riskFlags.push(`High porosity (${rawPorosity.toFixed(1)}%) — severe water penetration risk; bitumen film displaced during immersion`);
-  if (rawMC > REF.moistureContent.badAbove)
-    riskFlags.push(`High moisture content (${rawMC.toFixed(2)}%) — pre-drying mandatory before bitumen application`);
-  if (rawSio2 > REF.sio2.badAbove)
-    riskFlags.push(`High SiO₂ (${rawSio2.toFixed(1)}%) — acidic aggregate; anti-stripping additive strongly recommended`);
-  if (rawCao < REF.cao.poorBelow)
-    riskFlags.push(`Very low CaO (${rawCao.toFixed(1)}%) — limited alkaline surface chemistry for bitumen bonding`);
-  if (rawFe2o3 < 1.0)
-    riskFlags.push(`Very low Fe₂O₃ (${rawFe2o3.toFixed(2)}%) — reduced hydrophobic surface character`);
-  if (rawPorosity !== undefined && rawPorosity > 5 && rawCao > 30)
-    riskFlags.push("High CaO but extreme porosity — CaO benefit overridden by water ingress (Tanga Cement limestone pattern)");
 
-  // ── Recommendation ───────────────────────────────────────────────────────
+  if (incomplete) {
+    riskFlags.push(`⚠ Incomplete input: ${missingVars.join(", ")} ${missingVars.length > 1 ? "are" : "is"} missing — prediction accuracy is reduced.`);
+  }
+  if (rawP !== undefined && rawP > 8)
+    riskFlags.push(`High porosity (${rawP.toFixed(1)}%) — severe water penetration risk; bitumen film prone to displacement during immersion.`);
+  if (rawMC > 1.5)
+    riskFlags.push(`Elevated moisture content (${rawMC.toFixed(3)}%) — pre-drying strongly recommended before prime coat application.`);
+  if (rawSio2 > 65)
+    riskFlags.push(`High SiO₂ (${rawSio2.toFixed(1)}%) — electronegative acidic surface; anti-stripping additive strongly recommended.`);
+  if (rawCao < 1.5)
+    riskFlags.push(`Very low CaO (${rawCao.toFixed(1)}%) — limited alkaline surface chemistry for bitumen bonding.`);
+  if (rawFe < 1.0)
+    riskFlags.push(`Very low Fe₂O₃ (${rawFe.toFixed(2)}%) — reduced surface reactivity with bitumen polar compounds.`);
+  if (rawP !== undefined && rawP > 5 && rawCao > 30)
+    riskFlags.push("High CaO but extreme porosity — chemical advantage overridden by moisture ingress (consistent with Dar es Salaam limestone, Senzota 2026 study).");
+
+  // ── 10. Recommendation ──────────────────────────────────────────────────
   let recommendation: string;
-  if      (predictedRC >= 95) recommendation = "Suitable for all pavement applications without modification. Low stripping risk.";
-  else if (predictedRC >= 80) recommendation = "Suitable for most applications. Consider anti-stripping additive for high-rainfall or submerged environments.";
-  else if (predictedRC >= 60) recommendation = "Use with caution. Anti-stripping additive required. Not recommended for national highways without pre-treatment.";
-  else                         recommendation = "Not suitable for bituminous pavement without significant treatment. Investigate source or select alternative aggregate.";
+  if      (predictedRC >= 95) recommendation = "Excellent prime coat compatibility. Suitable for all pavement layers without modification. Very low stripping risk under tropical conditions.";
+  else if (predictedRC >= 85) recommendation = "Good adhesivity. Suitable for national highways and urban roads. Consider anti-stripping additive for coastal or high-rainfall corridors.";
+  else if (predictedRC >= 70) recommendation = "Acceptable adhesivity for standard road applications. Anti-stripping additive recommended. Monitor performance under heavy rainfall cycles.";
+  else if (predictedRC >= 50) recommendation = "Borderline adhesivity. Anti-stripping additive is mandatory. Not recommended for national highways or high-traffic routes without pre-treatment and re-testing.";
+  else                         recommendation = "Unacceptable adhesivity. This aggregate is incompatible with C55 bitumen emulsion prime coat in its natural state. Investigate anti-stripping treatment, aggregate pre-treatment, or select an alternative aggregate source.";
 
-  // ── Breakdown ────────────────────────────────────────────────────────────
-  const impact = (n: number) => n > 0.6 ? "positive" as const : n > 0.3 ? "neutral" as const : "negative" as const;
+  // ── 11. Breakdown ───────────────────────────────────────────────────────
+  const impact = (n: number): "positive" | "negative" | "neutral" =>
+    n > 0.6 ? "positive" : n > 0.3 ? "neutral" : "negative";
 
   const breakdown = {
-    porosity:        { value: rawPorosity ?? 0, contribution: W.porosity * porosityNorm * 100, impact: impact(porosityNorm) },
-    moistureContent: { value: rawMC,            contribution: W.mc       * mcNorm       * 100, impact: impact(mcNorm)       },
-    sio2:            { value: rawSio2,           contribution: W.sio2     * sio2Norm     * 100, impact: impact(sio2Norm)     },
-    cao:             { value: rawCao,            contribution: W.cao      * caoNorm      * 100, impact: impact(caoNorm)      },
-    fe2o3:           { value: rawFe2o3,          contribution: W.fe2o3    * fe2o3Norm    * 100, impact: impact(fe2o3Norm)    },
-    al2o3:           { value: rawAl2o3,          contribution: W.al2o3    * al2o3Norm    * 100, impact: impact(al2o3Norm)    },
+    porosity:        { value: rawP ?? 0,  contribution: W.p     * pNorm   * 100, impact: impact(pNorm)    },
+    moistureContent: { value: rawMC,      contribution: W.mc    * mcNorm  * 100, impact: impact(mcNorm)   },
+    sio2:            { value: rawSio2,    contribution: W.sio2  * sio2N   * 100, impact: impact(sio2N)    },
+    cao:             { value: rawCao,     contribution: W.cao   * caoN    * 100, impact: impact(caoN)     },
+    fe2o3:           { value: rawFe,      contribution: W.fe2o3 * fe2o3N  * 100, impact: impact(fe2o3N)   },
+    al2o3:           { value: rawAl,      contribution: W.al2o3 * al2o3N  * 100, impact: impact(al2o3N)   },
   };
 
   return {
-    predictedRC: Math.round(predictedRC),
-    grade, gradeColor,
+    predictedRC,
+    rcLow,
+    rcHigh,
+    grade,
+    gradeColor,
     score: Math.round(score),
     confidence: isExperimental ? "experimental" : "index-based",
+    incomplete,
+    missingVars,
+    stoneType,
     breakdown,
     riskFlags,
     recommendation,

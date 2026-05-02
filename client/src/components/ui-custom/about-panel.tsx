@@ -101,8 +101,8 @@ export function AboutPanel({ open, onClose }: AboutPanelProps) {
                 <div>
                   <p className="font-medium text-foreground text-xs">Aggregate Sources</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Basalt (Dar es Salaam quarry), Granite (Dar es Salaam quarry),
-                    Limestone (Tanga Cement — Tanga region).
+                    Basalt (Ntyuka Quarry, Dodoma), Granite (Chinangali Quarry, Dodoma),
+                    Limestone (Tanga Cement — Dar es Salaam).
                   </p>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export function AboutPanel({ open, onClose }: AboutPanelProps) {
                   <p className="font-medium text-foreground text-xs">Prediction Model</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Semi-empirical Weighted Index Scoring (6 factors) — MC (33%), Porosity (24%),
-                    Fe₂O₃ (15%), Al₂O₃ (12%), SiO₂ (10%), CaO (6%).
+                    Al₂O₃ (18%), CaO (14%), SiO₂ (7%), Fe₂O₃ (4%).
                     57% Physical · 43% Chemical. Hybrid data-driven + engineering judgment.
                   </p>
                 </div>

@@ -23,16 +23,16 @@ import { predictAdhesivity, getProjectSuitability, type AggregateInput } from "@
 // Quick-load presets from experimental data (all 6 oxides)
 const PRESETS = [
   {
-    label: "Basalt (Dar es Salaam)",
-    values: { porosity: 0.49, moistureContent: 0.025, sio2: 47.4, cao: 7.28, fe2o3: 16.70, al2o3: 8.33, aggregateType: "basalt" },
+    label: "Basalt (Ntyuka, Dodoma)",
+    values: { porosity: 0.49, moistureContent: 0.0245, sio2: 47.40, cao: 7.28, fe2o3: 16.70, al2o3: 8.33, aggregateType: "basalt" },
   },
   {
-    label: "Granite (Dar es Salaam)",
-    values: { porosity: 1.36, moistureContent: 0.153, sio2: 68.88, cao: 1.71, fe2o3: 3.19, al2o3: 8.91, aggregateType: "granite" },
+    label: "Granite (Chinangali, Dodoma)",
+    values: { porosity: 1.36, moistureContent: 0.1526, sio2: 68.88, cao: 1.71, fe2o3: 3.19, al2o3: 8.91, aggregateType: "granite" },
   },
   {
-    label: "Limestone (Tanga Cement)",
-    values: { porosity: 20.2, moistureContent: 9.848, sio2: 5.01, cao: 51.9, fe2o3: 0.27, al2o3: 1.39, aggregateType: "limestone" },
+    label: "Limestone (Dar es Salaam)",
+    values: { porosity: 20.20, moistureContent: 2.2531, sio2: 5.01, cao: 51.90, fe2o3: 0.27, al2o3: 1.39, aggregateType: "limestone" },
   },
 ];
 
@@ -180,7 +180,7 @@ export default function Predict() {
               {/* Physical properties */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wide">
-                  Physical Properties — 57% of model
+                  Physical Properties — 57% of model (MC + Porosity)
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
                   {field("porosity",         "Porosity (%)",          "porosity",         "0.01")}
@@ -192,7 +192,7 @@ export default function Predict() {
               {/* Chemical properties */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wide">
-                  Chemical Properties (XRF) — 43% of model
+                  Chemical Properties (XRF) — 43% of model (Al₂O₃ + CaO + SiO₂ + Fe₂O₃)
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
                   {field("fe2o3", "Fe₂O₃ (%)", "fe2o3", "0.01")}
@@ -285,12 +285,12 @@ export default function Predict() {
                 <CardContent className="space-y-2.5">
                   <ContribBar label="MC (33%)"       contribution={result.breakdown.moistureContent.contribution} impact={result.breakdown.moistureContent.impact} />
                   <ContribBar label="Porosity (24%)" contribution={result.breakdown.porosity.contribution}        impact={result.breakdown.porosity.impact} />
-                  <ContribBar label="Fe₂O₃ (15%)"    contribution={result.breakdown.fe2o3.contribution}           impact={result.breakdown.fe2o3.impact} />
-                  <ContribBar label="Al₂O₃ (12%)"    contribution={result.breakdown.al2o3.contribution}           impact={result.breakdown.al2o3.impact} />
-                  <ContribBar label="SiO₂ (10%)"     contribution={result.breakdown.sio2.contribution}            impact={result.breakdown.sio2.impact} />
-                  <ContribBar label="CaO (6%)"        contribution={result.breakdown.cao.contribution}             impact={result.breakdown.cao.impact} />
+                  <ContribBar label="Al₂O₃ (18%)"    contribution={result.breakdown.al2o3.contribution}           impact={result.breakdown.al2o3.impact} />
+                  <ContribBar label="CaO (14%)"       contribution={result.breakdown.cao.contribution}             impact={result.breakdown.cao.impact} />
+                  <ContribBar label="SiO₂ (7%)"      contribution={result.breakdown.sio2.contribution}            impact={result.breakdown.sio2.impact} />
+                  <ContribBar label="Fe₂O₃ (4%)"     contribution={result.breakdown.fe2o3.contribution}           impact={result.breakdown.fe2o3.impact} />
                   <div className="text-xs text-muted-foreground pt-1 border-t border-border">
-                    57% Physical (MC + Porosity) · 43% Chemical (Fe₂O₃ + Al₂O₃ + SiO₂ + CaO)
+                    57% Physical (MC + Porosity) · 43% Chemical (Al₂O₃ + CaO + SiO₂ + Fe₂O₃)
                   </div>
                 </CardContent>
               </Card>
@@ -309,7 +309,7 @@ export default function Predict() {
             <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
             <p className="text-xs text-muted-foreground leading-relaxed">
               <strong>Model basis:</strong> Weighted index scoring (6 factors) calibrated from 3 experimental data points
-              (Basalt, Granite, Limestone — Dar es Salaam, 2026) and literature consensus.
+              (Basalt — Ntyuka/Dodoma, Granite — Chinangali/Dodoma, Limestone — Dar es Salaam, 2026) and literature consensus.
               Hybrid data-driven + engineering judgment weights. MAE = 6.65% on calibration set.
               Results marked "Index-based" are indicative estimates only.
             </p>

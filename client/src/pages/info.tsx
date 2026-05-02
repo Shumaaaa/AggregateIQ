@@ -126,7 +126,7 @@ export default function Info() {
 
           <InfoSection id="experiment" title="The Experiments">
             <p>
-              Three experiments were performed on each aggregate specimen. All testing was conducted in Dar es Salaam, Tanzania (2026).
+              Three experiments were performed on each aggregate specimen. Physical testing (MC, Porosity) was conducted at TANROADS and GST laboratories in Dodoma; XRF chemical analysis at TIRDO, Dar es Salaam; Adhesivity tests at TANROADS Dodoma (2026).
             </p>
             <h3 className="font-semibold text-foreground mt-3">1. Retained Coating Test (ASTM D1664)</h3>
             <p>
@@ -134,9 +134,10 @@ export default function Info() {
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>RC ≥ 95% → Very Good</li>
-              <li>RC 80–94% → Acceptable</li>
-              <li>RC 60–79% → Marginal</li>
-              <li>RC &lt; 60% → Unacceptable</li>
+              <li>RC 85–94% → Good</li>
+              <li>RC 70–84% → Acceptable</li>
+              <li>RC 50–69% → Borderline</li>
+              <li>RC &lt; 50% → Unacceptable</li>
             </ul>
 
             <h3 className="font-semibold text-foreground mt-3">2. Physical Property Tests</h3>
@@ -210,9 +211,9 @@ export default function Info() {
               In practice, aggregates should be dried before bitumen application if moisture content exceeds acceptable limits.
             </p>
             <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono">
-              <Prop name="Basalt"    value="0.025% — negligible" />
-              <Prop name="Granite"   value="0.153% — very low" />
-              <Prop name="Limestone" value="9.848% — very high (drying required)" />
+              <Prop name="Basalt"    value="0.0245% — negligible" />
+              <Prop name="Granite"   value="0.1526% — very low" />
+              <Prop name="Limestone" value="2.2531% — elevated (pre-drying recommended)" />
             </div>
           </InfoSection>
 
@@ -245,7 +246,7 @@ export default function Info() {
               <li>The resulting ionic bond is stronger than the purely physical adhesion of neutral surfaces</li>
             </ul>
             <p>
-              <strong className="text-foreground">Important caveat (Tanga Limestone case):</strong> High CaO does NOT guarantee good adhesivity. In our Limestone specimen, CaO = 51.9% (excellent chemistry) — but porosity = 20.2% (catastrophic for adhesion). The porosity effect is stronger than the CaO benefit. This is a critical finding of this study.
+              <strong className="text-foreground">Important caveat (Dar es Salaam Limestone case):</strong> High CaO does NOT guarantee good adhesivity. In our Limestone specimen, CaO = 51.9% (excellent chemistry) — but porosity = 20.2% (catastrophic for adhesion). The porosity effect is stronger than the CaO benefit. This is a critical finding of this study.
             </p>
             <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono">
               <Prop name="Basalt"    value="7.28% — moderate, beneficial" />
@@ -255,9 +256,9 @@ export default function Info() {
           </InfoSection>
 
           <InfoSection id="fe2o3" title="Fe₂O₃ and Al₂O₃">
-            <h3 className="font-semibold text-foreground">Fe₂O₃ — Iron(III) Oxide · Model Weight: 15%</h3>
+            <h3 className="font-semibold text-foreground">Fe₂O₃ — Iron(III) Oxide · Model Weight: 4%</h3>
             <p>
-              Fe₂O₃ is the third most influential factor in the AggregateIQ model. High iron oxide content is characteristic of mafic rocks like basalt and dolerite. It contributes to adhesivity by:
+              Fe₂O₃ is the weakest chemical predictor in the AggregateIQ model (R² = 0.5911, weight 4%). High iron oxide content is characteristic of mafic rocks like basalt and dolerite. It contributes to adhesivity by:
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Increasing surface polarity — improving bitumen-aggregate wetting and film formation</li>
@@ -276,9 +277,9 @@ export default function Info() {
               <span className="font-semibold text-primary">Threshold:</span> Fe₂O₃ &lt; 1% triggers a risk flag in the model. Values above 5% are considered good for adhesivity.
             </div>
 
-            <h3 className="font-semibold text-foreground mt-4">Al₂O₃ — Aluminium Oxide · Model Weight: 12%</h3>
+            <h3 className="font-semibold text-foreground mt-4">Al₂O₃ — Aluminium Oxide · Model Weight: 18%</h3>
             <p>
-              Al₂O₃ (alumina) is the fourth most influential chemical factor. Aluminate surfaces are amphoteric — they can act as either acid or base depending on pH conditions. In bituminous systems, alumina-rich surfaces tend to interact favourably with bitumen carboxyl groups at neutral to slightly alkaline pH.
+              Al₂O₃ (alumina) is the strongest chemical predictor (R² = 0.9362, weight 18%). Aluminate surfaces are amphoteric — they can act as either acid or base depending on pH conditions. In bituminous systems, alumina-rich surfaces tend to interact favourably with bitumen carboxyl groups at neutral to slightly alkaline pH.
             </p>
             <p>
               Notably, both Basalt and Granite have similar Al₂O₃ values (8.33% vs 8.91%), while Limestone is much lower (1.39%). This means Al₂O₃ contributes significantly to separating the two good performers from the poor one.
@@ -289,8 +290,8 @@ export default function Info() {
               <Prop name="Limestone" value="1.39% — low" />
             </div>
             <div className="bg-muted/50 rounded-lg p-3 text-xs mt-3">
-              <p className="font-semibold text-foreground mb-1">Why 12% weight for Al₂O₃?</p>
-              <p>Data-driven optimization alone gave Al₂O₃ only 2% weight because Basalt and Granite have similar values (hard to differentiate). However, engineering literature confirms Al₂O₃ has a genuine positive role in adhesion. The 12% weight reflects hybrid data + judgment reasoning.</p>
+              <p className="font-semibold text-foreground mb-1">Why 18% weight for Al₂O₃?</p>
+              <p>Al₂O₃ achieved the highest R² among chemical predictors (R² = 0.9362) in standalone regression analysis. Its strong correlation with retained coating — driven by surface polarity and base character — justifies the leading 18% chemical weight, consistent with Ignatavicius et al. (2021) and Zhang et al. (2015).</p>
             </div>
           </InfoSection>
 
@@ -303,7 +304,7 @@ export default function Info() {
                 <tbody>
                   <DataRow label="Porosity"         basalt="0.49%"  granite="—" limestone="—" />
                   <DataRow label="Water Absorption" basalt="0.168%" granite="—" limestone="—" />
-                  <DataRow label="Moisture Content" basalt="0.025%" granite="—" limestone="—" />
+                  <DataRow label="Moisture Content" basalt="0.0245%" granite="—" limestone="—" />
                   <DataRow label="SiO₂"             basalt="47.40%" granite="—" limestone="—" />
                   <DataRow label="CaO"              basalt="7.28%"  granite="—" limestone="—" />
                   <DataRow label="Fe₂O₃"            basalt="16.70%" granite="—" limestone="—" />
@@ -326,7 +327,7 @@ export default function Info() {
                 <tbody>
                   <DataRow label="Porosity"         basalt="—" granite="1.36%"  limestone="—" />
                   <DataRow label="Water Absorption" basalt="—" granite="0.517%" limestone="—" />
-                  <DataRow label="Moisture Content" basalt="—" granite="0.153%" limestone="—" />
+                  <DataRow label="Moisture Content" basalt="—" granite="0.1526%" limestone="—" />
                   <DataRow label="SiO₂"             basalt="—" granite="68.88%" limestone="—" />
                   <DataRow label="CaO"              basalt="—" granite="1.71%"  limestone="—" />
                   <DataRow label="Fe₂O₃"            basalt="—" granite="3.19%"  limestone="—" />
@@ -342,14 +343,14 @@ export default function Info() {
 
           <InfoSection id="limestone" title="Limestone — Our Results">
             <p>
-              Limestone is a <strong className="text-foreground">sedimentary rock</strong> composed primarily of calcium carbonate (CaCO₃). The specimen tested in this study originates from the <strong className="text-foreground">Tanga Cement quarry</strong> — a high-grade, cement-quality limestone.
+              Limestone is a <strong className="text-foreground">sedimentary rock</strong> composed primarily of calcium carbonate (CaCO₃). The specimen tested in this study originates from the <strong className="text-foreground">Tanga Cement quarry (Dar es Salaam)</strong> — a high-grade, cement-quality limestone.
             </p>
             <div className="rounded-lg border border-border overflow-hidden">
               <table className="w-full text-xs">
                 <tbody>
                   <DataRow label="Porosity"         basalt="—" granite="—" limestone="20.20%" />
                   <DataRow label="Water Absorption" basalt="—" granite="—" limestone="9.995%" />
-                  <DataRow label="Moisture Content" basalt="—" granite="—" limestone="9.848%" />
+                  <DataRow label="Moisture Content" basalt="0.0245%" granite="0.1526%" limestone="2.2531%" />
                   <DataRow label="SiO₂"             basalt="—" granite="—" limestone="5.01%"  />
                   <DataRow label="CaO"              basalt="—" granite="—" limestone="51.90%" />
                   <DataRow label="Fe₂O₃"            basalt="—" granite="—" limestone="0.27%"  />
@@ -379,21 +380,21 @@ export default function Info() {
             <h3 className="font-semibold text-foreground mt-3">Formula (v2 — 6 factors)</h3>
             <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs leading-relaxed">
               Score = 0.33×(1−norm_MC) + 0.24×(1−norm_Porosity)<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.15×norm_Fe₂O₃ + 0.12×norm_Al₂O₃<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.10×(1−norm_SiO₂) + 0.06×norm_CaO
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.18×norm_Al₂O₃ + 0.14×norm_CaO<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.07×(1−norm_SiO₂) + 0.04×norm_Fe₂O₃
             </div>
             <div className="flex gap-4 mt-2 text-xs">
               <span className="text-muted-foreground">Physical total: <strong className="text-foreground">57%</strong> (MC + Porosity)</span>
-              <span className="text-muted-foreground">Chemical total: <strong className="text-foreground">43%</strong> (Fe₂O₃ + Al₂O₃ + SiO₂ + CaO)</span>
+              <span className="text-muted-foreground">Chemical total: <strong className="text-foreground">43%</strong> (Al₂O₃ + CaO + SiO₂ + Fe₂O₃)</span>
             </div>
             <h3 className="font-semibold text-foreground mt-3">Why these weights?</h3>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li><strong className="text-foreground">MC — 33%:</strong> Pre-existing moisture directly prevents bitumen from bonding to the surface. Strongest single predictor in our data.</li>
               <li><strong className="text-foreground">Porosity — 24%:</strong> High porosity creates water ingress pathways. Confirmed dominant factor (Zhang et al. 2015, Apeagyei et al. 2017).</li>
-              <li><strong className="text-foreground">Fe₂O₃ — 15%:</strong> Iron oxide promotes hydrophobic surface character and bitumen wetting. Basalt (16.7%) vs Limestone (0.27%) is our clearest chemical signal.</li>
-              <li><strong className="text-foreground">Al₂O₃ — 12%:</strong> Amphoteric surface chemistry aids adhesion. Engineering judgment raised weight from data-driven 2% to 12% based on literature.</li>
-              <li><strong className="text-foreground">SiO₂ — 10%:</strong> Acidic chemistry reduces bitumen affinity at &gt;52%. Granite (68.88%) vs Basalt (47.4%) shows clear 10-point RC drop.</li>
-              <li><strong className="text-foreground">CaO — 6%:</strong> Alkaline chemistry should help — but Limestone case shows porosity can override it entirely. Kept at 6% to acknowledge real but limited role.</li>
+              <li><strong className="text-foreground">Al₂O₃ — 18%:</strong> Best chemical predictor (R² = 0.9362). Surface polarity and base character strongly correlate with bitumen bonding. Highest chemical weight based on data-driven regression.</li>
+              <li><strong className="text-foreground">CaO — 14%:</strong> Alkaline surface chemistry promotes bitumen-aggregate affinity. Strong predictor (R² = 0.9196) — though Limestone case shows porosity can override even high CaO.</li>
+              <li><strong className="text-foreground">SiO₂ — 7%:</strong> Acidic chemistry reduces bitumen affinity. Moderate predictor (R² = 0.7506). Granite (68.88%) shows this effect clearly vs Basalt (47.4%).</li>
+              <li><strong className="text-foreground">Fe₂O₃ — 4%:</strong> Weakest predictor (R² = 0.5911). Some surface hydrophobic benefit — but limited generalisability. Reduced weight reflects weak standalone correlation.</li>
             </ul>
             <h3 className="font-semibold text-foreground mt-3">Limitations</h3>
             <ul className="list-disc list-inside space-y-1 pl-2">
@@ -419,9 +420,10 @@ export default function Info() {
                 <tbody>
                   {[
                     { grade: "Very Good",    range: "≥ 95%",    color: "#437A22", note: "Suitable for all applications. No additive needed." },
-                    { grade: "Acceptable",   range: "80–94%",   color: "#1B474D", note: "Suitable for most applications. Additive recommended in wet environments." },
-                    { grade: "Marginal",     range: "60–79%",   color: "#D19900", note: "Use with caution. Anti-stripping additive required." },
-                    { grade: "Unacceptable", range: "< 60%",    color: "#964219", note: "Not suitable without significant treatment." },
+                    { grade: "Good",         range: "85–94%",   color: "#1B474D", note: "Suitable for national highways and urban roads. Additive recommended for coastal corridors." },
+                    { grade: "Acceptable",   range: "70–84%",   color: "#20808D", note: "Suitable for standard road applications. Anti-stripping additive recommended." },
+                    { grade: "Borderline",   range: "50–69%",   color: "#D19900", note: "Anti-stripping additive mandatory. Not recommended for highways without pre-treatment." },
+                    { grade: "Unacceptable", range: "< 50%",    color: "#964219", note: "Incompatible with C55 emulsion in natural state. Requires aggregate pre-treatment or source change." },
                   ].map(({ grade, range, color, note }) => (
                     <tr key={grade} className="border-t border-border">
                       <td className="px-3 py-2 font-semibold text-xs" style={{ color }}>{grade}</td>

@@ -26,9 +26,9 @@ export default function About() {
         </CardHeader>
         <CardContent className="text-xs text-muted-foreground leading-relaxed space-y-2">
           <p>
-            This tool is calibrated from laboratory experiments conducted in Dar es Salaam,
-            Tanzania (2026), testing three aggregate specimens under the ASTM D1664 Retained
-            Coating test (static immersion, 24-hour water exposure).
+            This tool is calibrated from laboratory experiments (2026) testing three aggregate
+            specimens under the ASTM D1664 Retained Coating test (static immersion, 24-hour water
+            exposure). Aggregates sourced from Dodoma (Basalt, Granite) and Dar es Salaam (Limestone).
           </p>
           <p>
             Chemical characterisation was performed via X-Ray Fluorescence (XRF) analysis.
@@ -81,15 +81,19 @@ export default function About() {
             a structured expert heuristic combining experimental data with literature-calibrated
             weights. This is not a statistical regression model.
           </p>
-          <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs">
-            Score = 0.40×(1−norm_porosity) + 0.25×(1−norm_MC) + 0.20×(1−norm_SiO₂) + 0.15×norm_CaO
+          <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs leading-relaxed">
+            Score = 0.33×(1−norm_MC) + 0.24×(1−norm_Porosity)<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.18×norm_Al₂O₃ + 0.14×norm_CaO<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.07×(1−norm_SiO₂) + 0.04×norm_Fe₂O₃
           </div>
           <div className="space-y-1.5 mt-2">
             {[
-              { prop: "Porosity / WA",    weight: "40%", rationale: "Dominant factor — Zhang et al. (2015), Apeagyei et al. (2017)" },
-              { prop: "Moisture Content", weight: "25%", rationale: "Reflects surface dryness at time of bitumen application" },
-              { prop: "SiO₂",            weight: "20%", rationale: "Acidic chemistry (SiO₂ > 52%) reduces bitumen affinity" },
-              { prop: "CaO",             weight: "15%", rationale: "Alkaline chemistry promotes adhesion — can be overridden by porosity" },
+              { prop: "MC (33%)",         weight: "33%", rationale: "Strongest single predictor (R² = 0.9819) — pre-existing moisture blocks bitumen bonding" },
+              { prop: "Porosity (24%)",   weight: "24%", rationale: "Water ingress pathway — dominant factor (Zhang et al. 2015, Apeagyei et al. 2017)" },
+              { prop: "Al₂O₃ (18%)",    weight: "18%", rationale: "Best chemical predictor (R² = 0.9362) — surface polarity and base character" },
+              { prop: "CaO (14%)",        weight: "14%", rationale: "Alkaline chemistry promotes adhesion (R² = 0.9196) — overridden by extreme porosity" },
+              { prop: "SiO₂ (7%)",       weight: "7%",  rationale: "Acidic chemistry reduces bitumen affinity (R² = 0.7506)" },
+              { prop: "Fe₂O₃ (4%)",     weight: "4%",  rationale: "Weakest predictor (R² = 0.5911) — limited generalisability" },
             ].map(({ prop, weight, rationale }) => (
               <div key={prop} className="flex items-start gap-2">
                 <Badge variant="outline" className="text-xs h-5 shrink-0 font-mono">{weight}</Badge>

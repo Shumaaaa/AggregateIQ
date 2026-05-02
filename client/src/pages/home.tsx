@@ -35,15 +35,16 @@ const FEATURES = [
 
 const GRADES = [
   { grade: "Very Good",    range: "≥ 95%",     color: "#437A22" },
-  { grade: "Acceptable",   range: "80 – 94%",  color: "#1B474D" },
-  { grade: "Marginal",     range: "60 – 79%",  color: "#D19900" },
-  { grade: "Unacceptable", range: "< 60%",     color: "#964219" },
+  { grade: "Good",         range: "85 – 94%",  color: "#1B474D" },
+  { grade: "Acceptable",   range: "70 – 84%",  color: "#20808D" },
+  { grade: "Borderline",   range: "50 – 69%",  color: "#D19900" },
+  { grade: "Unacceptable", range: "< 50%",     color: "#964219" },
 ];
 
 const EXPERIMENTAL_DATA = [
-  { name: "Basalt",     porosity: "0.49",  mc: "0.025", sio2: "47.40", cao: "7.28",  fe2o3: "16.70", al2o3: "8.33", rc: 96, grade: "Very Good",    color: "#437A22" },
-  { name: "Granite",   porosity: "1.36",  mc: "0.153", sio2: "68.88", cao: "1.71",  fe2o3: "3.19",  al2o3: "8.91", rc: 86, grade: "Acceptable",   color: "#1B474D" },
-  { name: "Limestone*",porosity: "20.20", mc: "9.848", sio2: "5.01",  cao: "51.90", fe2o3: "0.27",  al2o3: "1.39", rc: 45, grade: "Unacceptable", color: "#964219" },
+  { name: "Basalt",     porosity: "0.49",  mc: "0.0245", sio2: "47.40", cao: "7.28",  fe2o3: "16.70", al2o3: "8.33", rc: 96, grade: "Very Good",    color: "#437A22" },
+  { name: "Granite",   porosity: "1.36",  mc: "0.1526", sio2: "68.88", cao: "1.71",  fe2o3: "3.19",  al2o3: "8.91", rc: 86, grade: "Good",         color: "#1B474D" },
+  { name: "Limestone*",porosity: "20.20", mc: "2.2531", sio2: "5.01",  cao: "51.90", fe2o3: "0.27",  al2o3: "1.39", rc: 45, grade: "Unacceptable", color: "#964219" },
 ];
 
 export default function Home() {
@@ -105,7 +106,7 @@ export default function Home() {
       {/* ASTM grade reference */}
       <div>
         <h2 className="text-sm font-semibold mb-3">ASTM D1664 — Adhesion Grade Reference</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {GRADES.map(({ grade, range, color }) => (
             <div
               key={grade}
@@ -122,7 +123,7 @@ export default function Home() {
       {/* Experimental data table */}
       <div>
         <h2 className="text-sm font-semibold mb-3">
-          Calibration Dataset — Tanga / Dar es Salaam (2026)
+          Calibration Dataset — Dodoma / Dar es Salaam (2026)
         </h2>
         <div className="rounded-lg border border-border overflow-hidden text-xs">
           <table className="w-full">
@@ -161,8 +162,8 @@ export default function Home() {
           </table>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          * Limestone is Tanga Cement quarry source — high-grade CaO (51.9%) but extreme
-          porosity (20.2%) overrides adhesion chemistry. Result is scientifically valid.
+          * Limestone is Dar es Salaam quarry source (Tanga Cement) — high-grade CaO (51.9%) but extreme
+          porosity (20.2%) overrides adhesion chemistry. Basalt and Granite from Dodoma quarries. Result is scientifically valid.
         </p>
       </div>
 

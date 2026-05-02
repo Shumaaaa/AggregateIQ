@@ -8,8 +8,9 @@ interface GradeBadgeProps {
 
 const GRADE_COLORS: Record<string, string> = {
   "Very Good":    "#437A22",
-  "Acceptable":   "#1B474D",
-  "Marginal":     "#D19900",
+  "Good":         "#1B474D",
+  "Acceptable":   "#20808D",
+  "Borderline":   "#D19900",
   "Unacceptable": "#964219",
 };
 
