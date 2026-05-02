@@ -42,7 +42,7 @@ const PAGE_W      = 210;
 const PAGE_H      = 297;
 const CONTENT_W   = PAGE_W - MARGIN * 2;   // 159.2 mm
 const HEADER_H    = 16;
-const FOOTER_H    = 18;
+const FOOTER_H    = 28;      // generous reserve — prevents last line overflowing onto next page
 const BODY_TOP    = MARGIN + HEADER_H + 6;
 const BODY_BOTTOM = PAGE_H - MARGIN - FOOTER_H;
 
@@ -94,19 +94,16 @@ class PageCursor {
     this.pdf.addPage();
     this.pageNum++;
     drawHeader(this.pdf, this.pageNum);
-    this.y = BODY_TOP;
+    this.y = BODY_TOP + 2;   // small top gap after auto page break
   }
 
   /** Force a hard page break regardless of position */
   forcePage(targetPageNum: number) {
-    // If we are already on the right page, just reset Y
-    if (this.pageNum === targetPageNum) {
-      this.y = BODY_TOP;
-      return;
-    }
-    // Close current page footer and add pages until we reach target
+    // Always force a new page — sections should never share a page unless intended
+    // Close current page footer
+    drawFooter(this.pdf, this.pageNum);
+    // Add pages until we reach target page number
     while (this.pageNum < targetPageNum) {
-      drawFooter(this.pdf, this.pageNum);
       this.pdf.addPage();
       this.pageNum++;
       drawHeader(this.pdf, this.pageNum);
@@ -161,26 +158,27 @@ function divider(pdf: jsPDF, y: number) {
 
 // ── Section heading H1 (teal pill bar) ───────────────────────────────────────
 function sectionH1(cur: PageCursor, text: string) {
-  cur.need(14);
-  const pdf = cur.pdf;
+  cur.need(16);
+  const pdf  = cur.pdf;
+  const boxY = cur.y;          // rect starts exactly at cur.y — no negative offset
   pdf.setFillColor(...C.bg);
   pdf.setDrawColor(...C.border);
-  pdf.roundedRect(MARGIN, cur.y - 5, CONTENT_W, 12, 2, 2, "FD");
+  pdf.roundedRect(MARGIN, boxY, CONTENT_W, 12, 2, 2, "FD");
   setH1(pdf);
   pdf.setTextColor(...C.primary);
-  pdf.text(text.toUpperCase(), MARGIN + 5, cur.y + 3.5);
+  pdf.text(text.toUpperCase(), MARGIN + 5, boxY + 8.5);   // baseline 8.5mm into box
   pdf.setTextColor(...C.text);
-  cur.advance(14);
+  cur.advance(16);
 }
 
 // ── Sub-heading H2 ────────────────────────────────────────────────────────────
 function sectionH2(cur: PageCursor, text: string) {
-  cur.need(10);
+  cur.need(12);
   setH2(cur.pdf);
   cur.pdf.setTextColor(...C.primary);
-  cur.pdf.text(text, MARGIN, cur.y);
+  cur.pdf.text(text, MARGIN, cur.y + 7);   // +7 so text baseline is below cur.y
   cur.pdf.setTextColor(...C.text);
-  cur.advance(8);
+  cur.advance(10);
 }
 
 // ── Body paragraph — with justified alignment ────────────────────────────────
@@ -598,18 +596,19 @@ export async function generatePdfReport(
   sectionH1(cur, "Stone Recognition Analysis");
 
   // Stone identity line
-  cur.need(16);
+  cur.need(18);
+  const stoneNameY = cur.y + 7;
   setH2(pdf);
   pdf.setTextColor(...gradeRgb);
-  pdf.text(sr.stoneType, MARGIN, cur.y);
+  pdf.text(sr.stoneType, MARGIN, stoneNameY);
   setLabel(pdf);
   pdf.setTextColor(...C.muted);
   pdf.text(
     `${sr.checksMatched} / ${sr.checksTotal} variables within reference range   \u00b7   ${sr.confidenceLabel}`,
-    MARGIN, cur.y + 8
+    MARGIN, stoneNameY + 8
   );
   pdf.setTextColor(...C.text);
-  cur.advance(16);
+  cur.advance(20);
 
   // Summary paragraph
   bodyText(cur, sr.summary);
