@@ -103,10 +103,10 @@ const EXPERIMENTAL = [
 const W = {
   mc:    0.33,
   p:     0.24,
-  al2o3: 0.10,
-  cao:   0.08,
-  sio2:  0.06,
-  fe2o3: 0.19,
+  al2o3: 0.09,
+  cao:   0.07,
+  sio2:  0.07,
+  fe2o3: 0.20,
 };
 
 // ── Confidence interval half-width (90% confidence = ±10pp) ───────────────
