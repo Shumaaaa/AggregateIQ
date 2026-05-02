@@ -36,6 +36,27 @@ export interface AggregateInput {
   aggregateType?: string;
 }
 
+export interface StoneVariableCheck {
+  label: string;          // e.g. "Porosity"
+  userValue: number;      // value the user entered
+  refValue: number;       // calibration reference value
+  unit: string;           // "%"
+  inBounds: boolean;      // within 10% tolerance?
+  deviation: number;      // % deviation from reference (0–100+)
+  reason: string;         // plain-English explanation of deviation if out of bounds
+}
+
+export interface StoneRecognitionResult {
+  stoneType: string;               // "Basalt", "Granite", "Limestone", or "Undefined"
+  matched: boolean;                // false if Undefined
+  checksTotal: number;             // how many variables were checked
+  checksMatched: number;           // how many were within tolerance
+  confidenceLabel: string;         // "90% confidence" always
+  summary: string;                 // one short sentence e.g. "With 90% confidence, the aggregate matches Basalt."
+  detail: string;                  // longer explanation for Undefined or edge cases
+  variableChecks: StoneVariableCheck[];
+}
+
 export interface AdhesivityResult {
   predictedRC: number;
   rcLow: number;           // 90% confidence lower bound
@@ -46,7 +67,8 @@ export interface AdhesivityResult {
   confidence: "experimental" | "index-based";
   incomplete: boolean;     // true if porosity or MC are missing
   missingVars: string[];   // list of missing critical variables
-  stoneType: string;       // recognised stone type or "Undefined"
+  stoneType: string;              // recognised stone type or "Undefined"
+  stoneRecognition: StoneRecognitionResult; // full recognition report
   breakdown: {
     porosity:       { value: number; contribution: number; impact: "positive" | "negative" | "neutral" };
     moistureContent:{ value: number; contribution: number; impact: "positive" | "negative" | "neutral" };
@@ -103,36 +125,180 @@ function normDirect(x: number, min: number, max: number): number {
   return clamp((x - min) / (max - min + 1e-9), 0, 1);
 }
 
+// ── Out-of-bounds reason generator ────────────────────────────────────────
+function outOfBoundsReason(
+  label: string,
+  userVal: number,
+  refVal: number,
+  stoneType: string,
+  deviation: number,
+): string {
+  const dir = userVal > refVal ? "above" : "below";
+  const pct = deviation.toFixed(1);
+
+  const reasons: Record<string, Record<string, string>> = {
+    Porosity: {
+      above: `Porosity (${userVal.toFixed(2)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(2)}%). Higher porosity may indicate greater weathering, secondary mineralization, or a different quarry depth. Porous ${stoneType} variants are known in chemically altered zones.`,
+      below: `Porosity (${userVal.toFixed(2)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(2)}%). Very dense samples may reflect fresher rock from deeper quarry faces or tighter mineral interlocking.`,
+    },
+    MC: {
+      above: `Moisture content (${userVal.toFixed(4)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(4)}%). This may reflect inadequate pre-test drying, high ambient humidity during sampling, or minor surface absorption variations between quarry batches.`,
+      below: `Moisture content (${userVal.toFixed(4)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(4)}%). Exceptionally dry conditions or extended oven-drying before testing can reduce MC below the typical range.`,
+    },
+    "SiO₂": {
+      above: `SiO₂ (${userVal.toFixed(2)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(2)}%). Elevated silica may indicate quartz vein intrusions or feldspar enrichment — common in heterogeneous igneous bodies.`,
+      below: `SiO₂ (${userVal.toFixed(2)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(2)}%). Lower silica may suggest a more mafic or carbonate-rich local zone within the same quarry.`,
+    },
+    CaO: {
+      above: `CaO (${userVal.toFixed(2)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(2)}%). Higher calcium may reflect carbonate vein intrusions, secondary calcite infilling of fractures, or proximity to a limestone contact zone.`,
+      below: `CaO (${userVal.toFixed(2)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(2)}%). Lower calcium may indicate a more silicic or potassic local variation within the same rock body.`,
+    },
+    "Fe₂O₃": {
+      above: `Fe₂O₃ (${userVal.toFixed(2)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(2)}%). Elevated iron may reflect greater oxidation, lateritic alteration near the surface, or magnetite-rich mineral bands.`,
+      below: `Fe₂O₃ (${userVal.toFixed(2)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(2)}%). Lower iron may indicate a fresher, less weathered sample or a leucocratic (light-coloured) variant of the same rock type.`,
+    },
+    "Al₂O₃": {
+      above: `Al₂O₃ (${userVal.toFixed(2)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(2)}%). Higher alumina may suggest greater feldspar or clay mineral content — possible in weathered zones or feldspathic variants.`,
+      below: `Al₂O₃ (${userVal.toFixed(2)}%) is ${pct}% ${dir} the ${stoneType} reference (${refVal.toFixed(2)}%). Lower alumina is consistent with a more mafic or carbonate-dominated local composition.`,
+    },
+  };
+
+  return reasons[label]?.[dir] ??
+    `${label} (${userVal.toFixed(2)}%) deviates ${pct}% from the ${stoneType} reference (${refVal.toFixed(2)}%) — within geological variability range for this rock type.`;
+}
+
 // ── Stone recognition ──────────────────────────────────────────────────────
 /**
- * Identifies aggregate type based on 10% tolerance window around calibration values.
- * Returns "Basalt", "Granite", "Limestone", or "Undefined".
+ * Identifies aggregate type with detailed per-variable analysis.
+ * Uses 10% tolerance window (= 90% confidence).
+ * Requires ≥3 variables checked, ≥70% within tolerance to match.
  */
-export function recogniseStone(input: AggregateInput): string {
-  const tol = 0.10; // 10% tolerance each side = 90% confidence window
+export function recogniseStone(input: AggregateInput): StoneRecognitionResult {
+  const tol = 0.10;
+
+  // Build variable definitions to check
+  const varDefs = [
+    { label: "Porosity",  val: input.porosity,        getRef: (e: typeof EXPERIMENTAL[0]) => e.porosity, eps: 0.01 },
+    { label: "MC",        val: input.moistureContent, getRef: (e: typeof EXPERIMENTAL[0]) => e.mc,       eps: 0.01 },
+    { label: "SiO₂",     val: input.sio2,             getRef: (e: typeof EXPERIMENTAL[0]) => e.sio2,    eps: 0.01 },
+    { label: "CaO",       val: input.cao,              getRef: (e: typeof EXPERIMENTAL[0]) => e.cao,     eps: 0.10 },
+    { label: "Fe₂O₃",   val: input.fe2o3,            getRef: (e: typeof EXPERIMENTAL[0]) => e.fe2o3,  eps: 0.10 },
+    { label: "Al₂O₃",   val: input.al2o3,            getRef: (e: typeof EXPERIMENTAL[0]) => e.al2o3,  eps: 0.10 },
+  ];
+
+  // Try to match each stone type
+  let bestMatch: typeof EXPERIMENTAL[0] | null = null;
+  let bestMatchChecks: { inBounds: boolean; deviation: number }[] = [];
+  let bestMatchCount = -1;
 
   for (const exp of EXPERIMENTAL) {
-    const checks: boolean[] = [];
+    const checkResults: { inBounds: boolean; deviation: number }[] = [];
 
-    if (input.porosity !== undefined)
-      checks.push(Math.abs(input.porosity - exp.porosity) / (exp.porosity + 0.01) <= tol);
-    if (input.moistureContent !== undefined)
-      checks.push(Math.abs(input.moistureContent - exp.mc) / (exp.mc + 0.01) <= tol);
-    if (input.sio2 !== undefined)
-      checks.push(Math.abs(input.sio2 - exp.sio2) / (exp.sio2 + 0.01) <= tol);
-    if (input.cao !== undefined)
-      checks.push(Math.abs(input.cao - exp.cao) / (exp.cao + 0.1) <= tol);
-    if (input.fe2o3 !== undefined)
-      checks.push(Math.abs(input.fe2o3 - exp.fe2o3) / (exp.fe2o3 + 0.1) <= tol);
-    if (input.al2o3 !== undefined)
-      checks.push(Math.abs(input.al2o3 - exp.al2o3) / (exp.al2o3 + 0.1) <= tol);
+    for (const v of varDefs) {
+      if (v.val === undefined) continue;
+      const ref = v.getRef(exp);
+      const deviation = Math.abs(v.val - ref) / (ref + v.eps) * 100;
+      checkResults.push({ inBounds: deviation <= tol * 100, deviation });
+    }
 
-    // Need at least 3 variables checked, and ≥70% of them within tolerance
-    if (checks.length >= 3 && checks.filter(Boolean).length / checks.length >= 0.70) {
-      return exp.type;
+    if (checkResults.length < 3) continue;
+    const matchCount = checkResults.filter(c => c.inBounds).length;
+    const matchRatio = matchCount / checkResults.length;
+
+    if (matchRatio >= 0.70 && matchCount > bestMatchCount) {
+      bestMatch = exp;
+      bestMatchChecks = checkResults;
+      bestMatchCount = matchCount;
     }
   }
-  return "Undefined";
+
+  // Build variable checks array for the best match (or closest stone if undefined)
+  const targetExp = bestMatch ?? EXPERIMENTAL[0]; // fallback for undefined display
+  const variableChecks: StoneVariableCheck[] = [];
+  let checkIdx = 0;
+
+  for (const v of varDefs) {
+    if (v.val === undefined) continue;
+    const ref = v.getRef(targetExp);
+    const deviation = Math.abs(v.val - ref) / (ref + v.eps) * 100;
+    const inBounds = deviation <= tol * 100;
+    variableChecks.push({
+      label:     v.label,
+      userValue: v.val,
+      refValue:  ref,
+      unit:      "%",
+      inBounds,
+      deviation,
+      reason: inBounds
+        ? `${v.label} is within the expected range for ${targetExp.type} (deviation: ${deviation.toFixed(1)}%).`
+        : outOfBoundsReason(v.label, v.val, ref, targetExp.type, deviation),
+    });
+    checkIdx++;
+  }
+
+  const checksTotal   = variableChecks.length;
+  const checksMatched = variableChecks.filter(c => c.inBounds).length;
+
+  if (bestMatch) {
+    const outCount = checksTotal - checksMatched;
+    const outNames = variableChecks.filter(c => !c.inBounds).map(c => c.label);
+    const summary = outCount === 0
+      ? `With 90% confidence, the aggregate matches ${bestMatch.type} — all ${checksTotal} provided variables are within the expected range.`
+      : `With 90% confidence, the aggregate matches ${bestMatch.type}. ${checksMatched} of ${checksTotal} variables are within the expected range; ${outNames.join(", ")} ${outCount === 1 ? "shows" : "show"} minor deviation.`;
+
+    const detail = outCount === 0
+      ? `All provided properties are consistent with the ${bestMatch.type} calibration data (Senzota 2026). This aggregate is classified as ${bestMatch.type} with high confidence.`
+      : `The deviating ${outCount === 1 ? "variable" : "variables"} (${outNames.join(", ")}) ${outCount === 1 ? "is" : "are"} likely due to natural geological variability between quarry batches or sampling locations. This does not invalidate the classification — it reflects normal heterogeneity within the rock type.`;
+
+    return {
+      stoneType: bestMatch.type,
+      matched: true,
+      checksTotal,
+      checksMatched,
+      confidenceLabel: "90% confidence",
+      summary,
+      detail,
+      variableChecks,
+    };
+  }
+
+  // Undefined — find closest stone for display
+  let closestExp = EXPERIMENTAL[0];
+  let closestScore = -1;
+  for (const exp of EXPERIMENTAL) {
+    const score = varDefs.filter(v => v.val !== undefined).filter(v => {
+      const ref = v.getRef(exp);
+      return Math.abs(v.val! - ref) / (ref + v.eps) * 100 <= tol * 100;
+    }).length;
+    if (score > closestScore) { closestScore = score; closestExp = exp; }
+  }
+
+  // Rebuild checks against closest stone for display
+  const undefinedChecks: StoneVariableCheck[] = [];
+  for (const v of varDefs) {
+    if (v.val === undefined) continue;
+    const ref = v.getRef(closestExp);
+    const deviation = Math.abs(v.val - ref) / (ref + v.eps) * 100;
+    const inBounds = deviation <= tol * 100;
+    undefinedChecks.push({
+      label: v.label, userValue: v.val, refValue: ref, unit: "%",
+      inBounds, deviation,
+      reason: inBounds
+        ? `Within range of ${closestExp.type} reference.`
+        : outOfBoundsReason(v.label, v.val, ref, closestExp.type, deviation),
+    });
+  }
+
+  return {
+    stoneType: "Undefined",
+    matched: false,
+    checksTotal: undefinedChecks.length,
+    checksMatched: undefinedChecks.filter(c => c.inBounds).length,
+    confidenceLabel: "90% confidence",
+    summary: "The aggregate does not match any stone type in the calibration database at 90% confidence.",
+    detail: "The provided properties do not sufficiently match Basalt, Granite, or Limestone within the 10% tolerance window. This may indicate a different rock type (e.g. quartzite, dolerite, sandstone) or an aggregate from a geological setting outside the calibration dataset (Senzota 2026 — Dodoma / Dar es Salaam).",
+    variableChecks: undefinedChecks,
+  };
 }
 
 // ── Grade assignment (5-level ASTM D3625-based — Table 4.15) ──────────────
@@ -165,13 +331,11 @@ export function predictAdhesivity(input: AggregateInput): AdhesivityResult {
   const rawAl   = input.al2o3  ?? 5;
 
   // ── 3. Stone recognition ────────────────────────────────────────────────
-  const stoneType = recogniseStone(input);
+  const stoneRecognition = recogniseStone(input);
+  const stoneType = stoneRecognition.stoneType;
 
   // ── 4. Experimental confidence check ───────────────────────────────────
-  let isExperimental = false;
-  if (stoneType !== "Undefined") {
-    isExperimental = true;
-  }
+  const isExperimental = stoneRecognition.matched;
 
   // ── 5. Normalized scores (0=worst, 1=best for adhesion) ────────────────
   const pNorm    = rawP !== undefined ? normInverse(rawP,   CALIB.p.min,    CALIB.p.max)    : 0.8;
@@ -252,6 +416,7 @@ export function predictAdhesivity(input: AggregateInput): AdhesivityResult {
     incomplete,
     missingVars,
     stoneType,
+    stoneRecognition,
     breakdown,
     riskFlags,
     recommendation,

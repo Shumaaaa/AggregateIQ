@@ -18,6 +18,7 @@ import { ContribBar } from "@/components/ui-custom/contrib-bar";
 import { GradeBadge } from "@/components/ui-custom/grade-badge";
 import { RiskFlags } from "@/components/ui-custom/risk-flags";
 import { SectionHeader } from "@/components/ui-custom/section-header";
+import { StoneRecognitionCard } from "@/components/ui-custom/stone-recognition-card";
 import { predictAdhesivity, getProjectSuitability, type AggregateInput } from "@/lib/adhesivity-model";
 
 // Quick-load presets from experimental data (all 6 oxides)
@@ -274,6 +275,9 @@ export default function Predict() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Stone recognition */}
+              <StoneRecognitionCard recognition={result.stoneRecognition} />
 
               {/* Factor breakdown */}
               <Card>
