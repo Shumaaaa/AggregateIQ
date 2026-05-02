@@ -183,15 +183,39 @@ function sectionH2(cur: PageCursor, text: string) {
   cur.advance(8);
 }
 
-// ── Body paragraph (auto-wrap + auto-overflow) ────────────────────────────────
+// ── Body paragraph — with justified alignment ────────────────────────────────
 function bodyText(cur: PageCursor, text: string, color?: [number,number,number]) {
   const pdf   = cur.pdf;
   setBody(pdf);
   pdf.setTextColor(...(color ?? C.text));
-  const lines = pdf.splitTextToSize(text, CONTENT_W);
-  for (const line of lines) {
+  const lines = pdf.splitTextToSize(text, CONTENT_W) as string[];
+  for (let i = 0; i < lines.length; i++) {
     cur.need(6.5);
-    pdf.text(line, MARGIN, cur.y);
+    const line     = lines[i];
+    const isLast   = i === lines.length - 1;
+    const trimmed  = line.trim();
+    // Last line of paragraph: left-align (standard justified behaviour)
+    if (isLast || trimmed === "") {
+      pdf.text(trimmed, MARGIN, cur.y);
+    } else {
+      // Justify: spread words evenly across CONTENT_W
+      const words = trimmed.split(" ").filter(w => w.length > 0);
+      if (words.length <= 1) {
+        pdf.text(trimmed, MARGIN, cur.y);
+      } else {
+        const lineWidth   = pdf.getTextWidth(trimmed.replace(/ +/g, " "));
+        const spaceCount  = words.length - 1;
+        const naturalSpace = pdf.getTextWidth(" ");
+        const extraSpace  = (CONTENT_W - lineWidth) / spaceCount + naturalSpace;
+        let xPos = MARGIN;
+        for (let wi = 0; wi < words.length; wi++) {
+          pdf.text(words[wi], xPos, cur.y);
+          if (wi < words.length - 1) {
+            xPos += pdf.getTextWidth(words[wi]) + extraSpace;
+          }
+        }
+      }
+    }
     cur.advance(6.5);
   }
   pdf.setTextColor(...C.text);
@@ -212,26 +236,39 @@ function labelText(cur: PageCursor, text: string, color?: [number,number,number]
 }
 
 // ── Table ─────────────────────────────────────────────────────────────────────
+// Layout model (all Y values are absolute page coordinates):
+//   rowTop  = cur.y               ← top edge of current row
+//   textY   = cur.y + ROW_H - PAD_B  ← baseline of text (near bottom of row)
+//   rowTop advances by ROW_H after each row
+//
+// This keeps rect(), text(), and line() all anchored to rowTop, eliminating
+// the off-by-one drift that was causing text to overlap row borders.
+
 interface TableCol { header: string; width: number; align?: "left"|"center"|"right" }
 
 function drawTable(cur: PageCursor, cols: TableCol[], rows: string[][], headerBg?: [number,number,number]) {
-  const pdf   = cur.pdf;
-  const ROW_H = 8.5;
-  const PAD   = 2.5;
-  const hbg   = headerBg ?? C.primary;
+  const pdf    = cur.pdf;
+  const ROW_H  = 9;      // total row height in mm
+  const PAD_L  = 3;      // left padding inside cell
+  const PAD_R  = 3;      // right padding inside cell
+  const PAD_B  = 3;      // baseline offset from row bottom (text sits near bottom)
+  const hbg    = headerBg ?? C.primary;
 
-  // Header row
+  // ── Header row ──────────────────────────────────────────────────────────────
   cur.need(ROW_H + 2);
+  const headerTop = cur.y;
   pdf.setFillColor(...hbg);
-  pdf.rect(MARGIN, cur.y - ROW_H + 2, CONTENT_W, ROW_H, "F");
+  pdf.rect(MARGIN, headerTop, CONTENT_W, ROW_H, "F");
   setLabel(pdf);
+  pdf.setFontSize(10);
   pdf.setTextColor(...C.white);
   let x = MARGIN;
+  const textBaseline = headerTop + ROW_H - PAD_B;
   for (const col of cols) {
-    const tx = col.align === "right"  ? x + col.width - PAD
+    const tx = col.align === "right"  ? x + col.width - PAD_R
              : col.align === "center" ? x + col.width / 2
-             : x + PAD;
-    pdf.text(col.header, tx, cur.y, {
+             : x + PAD_L;
+    pdf.text(col.header, tx, textBaseline, {
       align: col.align === "center" ? "center" : col.align === "right" ? "right" : "left"
     });
     x += col.width;
@@ -239,29 +276,36 @@ function drawTable(cur: PageCursor, cols: TableCol[], rows: string[][], headerBg
   pdf.setTextColor(...C.text);
   cur.advance(ROW_H);
 
-  // Data rows
+  // ── Data rows ────────────────────────────────────────────────────────────────
   let shade = false;
   for (const row of rows) {
     cur.need(ROW_H);
+    const rowTop     = cur.y;
+    const rowBaseline = rowTop + ROW_H - PAD_B;
+
+    // Alternating shade
     if (shade) {
       pdf.setFillColor(...C.bg);
-      pdf.rect(MARGIN, cur.y - ROW_H + 2, CONTENT_W, ROW_H, "F");
+      pdf.rect(MARGIN, rowTop, CONTENT_W, ROW_H, "F");
     }
+
+    // Bottom border of this row
     pdf.setDrawColor(...C.border);
     pdf.setLineWidth(0.2);
-    pdf.line(MARGIN, cur.y + 2, PAGE_W - MARGIN, cur.y + 2);
+    pdf.line(MARGIN, rowTop + ROW_H, PAGE_W - MARGIN, rowTop + ROW_H);
 
+    // Cell text
     x = MARGIN;
-    setBody(pdf);
+    pdf.setFont("times", "normal");
     pdf.setFontSize(11);
     pdf.setTextColor(...C.text);
     for (let ci = 0; ci < cols.length; ci++) {
       const col  = cols[ci];
       const cell = row[ci] ?? "";
-      const tx   = col.align === "right"  ? x + col.width - PAD
+      const tx   = col.align === "right"  ? x + col.width - PAD_R
                  : col.align === "center" ? x + col.width / 2
-                 : x + PAD;
-      pdf.text(cell, tx, cur.y, {
+                 : x + PAD_L;
+      pdf.text(cell, tx, rowBaseline, {
         align: col.align === "center" ? "center" : col.align === "right" ? "right" : "left"
       });
       x += col.width;
@@ -270,12 +314,21 @@ function drawTable(cur: PageCursor, cols: TableCol[], rows: string[][], headerBg
     shade = !shade;
   }
 
-  // Outer border
-  pdf.setDrawColor(...C.border);
-  pdf.setLineWidth(0.4);
+  // ── Outer border ─────────────────────────────────────────────────────────────
   const totalH = (rows.length + 1) * ROW_H;
-  pdf.rect(MARGIN, cur.y - totalH - 2, CONTENT_W, totalH + 2, "S");
-  cur.advance(5);
+  pdf.setDrawColor(...C.border);
+  pdf.setLineWidth(0.5);
+  pdf.rect(MARGIN, cur.y - totalH, CONTENT_W, totalH, "S");
+
+  // Vertical column dividers
+  pdf.setLineWidth(0.2);
+  let cx = MARGIN;
+  for (let ci = 0; ci < cols.length - 1; ci++) {
+    cx += cols[ci].width;
+    pdf.line(cx, cur.y - totalH, cx, cur.y);
+  }
+
+  cur.advance(6);
 }
 
 // ── Image (centred, with overflow protection) ─────────────────────────────────
@@ -844,16 +897,6 @@ export async function generatePdfReport(
   }
 
   cur.advance(4);
-  divider(pdf, cur.y);
-  cur.advance(6);
-
-  // ── Reference ─────────────────────────────────────────────────────────────────
-  sectionH2(cur, "Reference");
-  labelText(cur,
-    "Senzota, M. A. (2026). Bitumen emulsion prime coats adhesivity on the properties of aggregates in Tanzania " +
-    "(Master\u2019s dissertation, Master of Engineering Management \u2014 Project Management). " +
-    "University of Dar es Salaam. Supervisors: Dr. E. Ngesa & Dr. F. Mweta."
-  );
 
   // Footer on last page
   drawFooter(pdf, cur.pageNum);
