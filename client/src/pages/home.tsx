@@ -162,8 +162,9 @@ export default function Home() {
           </table>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          * Limestone is Dar es Salaam quarry source (Tanga Cement) — high-grade CaO (51.9%) but extreme
-          porosity (20.2%) overrides adhesion chemistry. Basalt and Granite from Dodoma quarries. Result is scientifically valid.
+          * Limestone sampled from Dar es Salaam — high-grade CaO (51.9%) but extreme
+          porosity (20.2%) overrides the adhesion chemistry. Basalt and Granite from Dodoma quarries. Perform rather well
+          compared to Limestone.
         </p>
       </div>
 
