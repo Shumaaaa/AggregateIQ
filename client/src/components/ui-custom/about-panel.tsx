@@ -121,7 +121,7 @@ export function AboutPanel({ open, onClose }: AboutPanelProps) {
           </section>
 
           {/* Built by */}
-          <section>
+          { /* <section>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
               Built By
             </h3>
@@ -146,12 +146,12 @@ export function AboutPanel({ open, onClose }: AboutPanelProps) {
                 </a>
               </div>
             </div>
-          </section>
+          </section> */}
 
           {/* Supervised by */}
           <section>
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-              Supervised By
+              Built By
             </h3>
             <div className="rounded-lg border border-border bg-muted/30 p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
