@@ -13,12 +13,12 @@ interface FactorContributionChartProps {
 }
 
 const FACTOR_LABELS: { key: keyof AdhesivityResult["breakdown"]; label: string; weight: string }[] = [
-  { key: "moistureContent", label: "Moisture Content (MC)", weight: "33%" },
-  { key: "porosity",        label: "Porosity",              weight: "24%" },
-  { key: "al2o3",           label: "Al₂O₃",                weight: "18%" },
-  { key: "cao",             label: "CaO",                   weight: "14%" },
-  { key: "sio2",            label: "SiO₂",                 weight: "7%"  },
-  { key: "fe2o3",           label: "Fe₂O₃",                weight: "4%"  },
+  { key: "moistureContent", label: "Moisture Content (MC)", weight: "31.7%" },
+  { key: "porosity",        label: "Porosity",              weight: "32.2%" },
+  { key: "al2o3",           label: "Al₂O₃",                weight: "3.5%" },
+  { key: "cao",             label: "CaO",                   weight: "2.9%" },
+  { key: "sio2",            label: "SiO₂",                 weight: "10.1%"  },
+  { key: "fe2o3",           label: "Fe₂O₃",                weight: "19.6%"  },
 ];
 
 const IMPACT_COLORS: Record<string, string> = {
