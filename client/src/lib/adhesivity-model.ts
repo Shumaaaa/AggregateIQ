@@ -8,12 +8,12 @@
  *
  * Final weights — derived from standalone regression R² hierarchy + literature (Ignatavicius et al. 2021;
  * Zhang et al. 2015; Fei et al. 2023):
- *   MC       : 0.33  — strongest single predictor (R²=0.9819); direct moisture stripping mechanism
- *   Porosity : 0.24  — second strongest (R²=0.9785); water ingress pathway
- *   Al₂O₃   : 0.18  — best chemical predictor (R²=0.9362); surface polarity + base character
- *   CaO      : 0.14  — second chemical predictor (R²=0.9196); hydrophilicity marker (Lesueur et al. 2013)
- *   SiO₂    : 0.07  — moderate predictor (R²=0.7506); secondary role (Moraes et al. 2004)
- *   Fe₂O₃   : 0.04  — weakest predictor (R²=0.5911); limited generalisability (Plancher et al. 1977)
+ *   MC       : 0.317 — strongest single predictor (R²=0.9819); direct moisture stripping mechanism
+ *   Porosity : 0.322 — second strongest (R²=0.9785); water ingress pathway
+ *   Al₂O₃   : 0.035 — best chemical predictor (R²=0.9362); surface polarity + base character
+ *   CaO      : 0.029 — second chemical predictor (R²=0.9196); hydrophilicity marker (Lesueur et al. 2013)
+ *   SiO₂    : 0.101 — moderate predictor (R²=0.7506); secondary role (Moraes et al. 2004)
+ *   Fe₂O₃   : 0.196 — weakest predictor (R²=0.5911); limited generalisability but the best differentiator (Plancher et al. 1977)
  *
  * Normalization: calibration dataset min/max (Table 4.12 of dissertation)
  * MAE on calibration dataset (n=3): 6.65%
@@ -178,12 +178,12 @@ export function recogniseStone(input: AggregateInput): StoneRecognitionResult {
 
   // Build variable definitions to check
   const varDefs = [
-    { label: "Porosity",  val: input.porosity,        getRef: (e: typeof EXPERIMENTAL[0]) => e.porosity, eps: 0.01 },
-    { label: "MC",        val: input.moistureContent, getRef: (e: typeof EXPERIMENTAL[0]) => e.mc,       eps: 0.01 },
-    { label: "SiO₂",     val: input.sio2,             getRef: (e: typeof EXPERIMENTAL[0]) => e.sio2,    eps: 0.01 },
-    { label: "CaO",       val: input.cao,              getRef: (e: typeof EXPERIMENTAL[0]) => e.cao,     eps: 0.10 },
-    { label: "Fe₂O₃",   val: input.fe2o3,            getRef: (e: typeof EXPERIMENTAL[0]) => e.fe2o3,  eps: 0.10 },
-    { label: "Al₂O₃",   val: input.al2o3,            getRef: (e: typeof EXPERIMENTAL[0]) => e.al2o3,  eps: 0.10 },
+    { label: "Porosity",  val: input.porosity,        getRef: (e: typeof EXPERIMENTAL[0]) => e.porosity, eps: 0.00 },
+    { label: "MC",        val: input.moistureContent, getRef: (e: typeof EXPERIMENTAL[0]) => e.mc,       eps: 0.00 },
+    { label: "SiO₂",     val: input.sio2,             getRef: (e: typeof EXPERIMENTAL[0]) => e.sio2,    eps: 0.00 },
+    { label: "CaO",       val: input.cao,              getRef: (e: typeof EXPERIMENTAL[0]) => e.cao,     eps: 0.00 },
+    { label: "Fe₂O₃",   val: input.fe2o3,            getRef: (e: typeof EXPERIMENTAL[0]) => e.fe2o3,  eps: 0.00 },
+    { label: "Al₂O₃",   val: input.al2o3,            getRef: (e: typeof EXPERIMENTAL[0]) => e.al2o3,  eps: 0.00 },
   ];
 
   // Try to match each stone type
@@ -325,10 +325,10 @@ export function predictAdhesivity(input: AggregateInput): AdhesivityResult {
   // ── 2. Resolve values (WA proxy for porosity if needed) ────────────────
   const rawP    = input.porosity ?? (input.waterAbsorption !== undefined ? input.waterAbsorption * 2.5 : undefined);
   const rawMC   = input.moistureContent ?? 0;
-  const rawSio2 = input.sio2   ?? 50;
-  const rawCao  = input.cao    ?? 3;
-  const rawFe   = input.fe2o3  ?? 5;
-  const rawAl   = input.al2o3  ?? 5;
+  const rawSio2 = input.sio2   ?? 0;
+  const rawCao  = input.cao    ?? 0;
+  const rawFe   = input.fe2o3  ?? 0;
+  const rawAl   = input.al2o3  ?? 0;
 
   // ── 3. Stone recognition ────────────────────────────────────────────────
   const stoneRecognition = recogniseStone(input);

@@ -536,12 +536,12 @@ export async function generatePdfReport(
     { header: "Impact",          width: CONTENT_W - 134, align: "center" },
   ];
   const factorDefs = [
-    { key: "moistureContent" as const, label: "Moisture Content (MC)", weight: "33%" },
-    { key: "porosity"        as const, label: "Porosity",               weight: "24%" },
-    { key: "al2o3"           as const, label: "Al\u2082O\u2083",        weight: "18%" },
-    { key: "cao"             as const, label: "CaO",                    weight: "14%" },
-    { key: "sio2"            as const, label: "SiO\u2082",              weight: "7%"  },
-    { key: "fe2o3"           as const, label: "Fe\u2082O\u2083",        weight: "4%"  },
+    { key: "moistureContent" as const, label: "Moisture Content (MC)", weight: "31.7%" },
+    { key: "porosity"        as const, label: "Porosity",               weight: "32.2%" },
+    { key: "al2o3"           as const, label: "Al\u2082O\u2083",        weight: "3.5%" },
+    { key: "cao"             as const, label: "CaO",                    weight: "2.9%" },
+    { key: "sio2"            as const, label: "SiO\u2082",              weight: "10.1%"  },
+    { key: "fe2o3"           as const, label: "Fe\u2082O\u2083",        weight: "19.6%"  },
   ];
   const factorRows = factorDefs.map(f => {
     const item = result.breakdown[f.key];

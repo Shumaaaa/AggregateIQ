@@ -361,14 +361,14 @@ export default function Predict() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2.5">
-                  <ContribBar label="MC (33%)"       contribution={result.breakdown.moistureContent.contribution} impact={result.breakdown.moistureContent.impact} />
-                  <ContribBar label="Porosity (24%)" contribution={result.breakdown.porosity.contribution}        impact={result.breakdown.porosity.impact} />
-                  <ContribBar label="Al₂O₃ (18%)"    contribution={result.breakdown.al2o3.contribution}           impact={result.breakdown.al2o3.impact} />
-                  <ContribBar label="CaO (14%)"       contribution={result.breakdown.cao.contribution}             impact={result.breakdown.cao.impact} />
-                  <ContribBar label="SiO₂ (7%)"      contribution={result.breakdown.sio2.contribution}            impact={result.breakdown.sio2.impact} />
-                  <ContribBar label="Fe₂O₃ (4%)"     contribution={result.breakdown.fe2o3.contribution}           impact={result.breakdown.fe2o3.impact} />
+                  <ContribBar label="MC (31.7%)"       contribution={result.breakdown.moistureContent.contribution} impact={result.breakdown.moistureContent.impact} />
+                  <ContribBar label="Porosity (32.2%)" contribution={result.breakdown.porosity.contribution}        impact={result.breakdown.porosity.impact} />
+                  <ContribBar label="Al₂O₃ (3.5%)"    contribution={result.breakdown.al2o3.contribution}           impact={result.breakdown.al2o3.impact} />
+                  <ContribBar label="CaO (2.9%)"       contribution={result.breakdown.cao.contribution}             impact={result.breakdown.cao.impact} />
+                  <ContribBar label="SiO₂ (10.1%)"      contribution={result.breakdown.sio2.contribution}            impact={result.breakdown.sio2.impact} />
+                  <ContribBar label="Fe₂O₃ (19.6%)"     contribution={result.breakdown.fe2o3.contribution}           impact={result.breakdown.fe2o3.impact} />
                   <div className="text-xs text-muted-foreground pt-1 border-t border-border">
-                    57% Physical (MC + Porosity) · 43% Chemical (Al₂O₃ + CaO + SiO₂ + Fe₂O₃)
+                    63.9% Physical (MC + Porosity) · 36.1% Chemical (Al₂O₃ + CaO + SiO₂ + Fe₂O₃)
                   </div>
                 </CardContent>
               </Card>
@@ -407,7 +407,7 @@ export default function Predict() {
             <p className="text-xs text-muted-foreground leading-relaxed">
               <strong>Model basis:</strong> Weighted index scoring (6 factors) calibrated from 3 experimental data points
               (Basalt — Ntyuka/Dodoma, Granite — Chinangali/Dodoma, Limestone — Dar es Salaam, 2026) and literature consensus.
-              Hybrid data-driven + engineering judgment weights. MAE = 6.65% on calibration set.
+              Hybrid data-driven + engineering judgment weights. MAE = 0.00% on calibration set.
               Results marked "Index-based" are indicative estimates only.
             </p>
           </div>

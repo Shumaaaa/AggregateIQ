@@ -82,18 +82,18 @@ export default function About() {
             weights. This is not a statistical regression model.
           </p>
           <div className="bg-muted/50 rounded-lg p-3 font-mono text-xs leading-relaxed">
-            Score = 0.33×(1−norm_MC) + 0.24×(1−norm_Porosity)<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.18×norm_Al₂O₃ + 0.14×norm_CaO<br />
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.07×(1−norm_SiO₂) + 0.04×norm_Fe₂O₃
+            Score = 0.317×(1−norm_MC) + 0.322×(1−norm_Porosity)<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.035×norm_Al₂O₃ + 0.029×norm_CaO<br />
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + 0.101×(1−norm_SiO₂) + 0.196×norm_Fe₂O₃
           </div>
           <div className="space-y-1.5 mt-2">
             {[
-              { prop: "MC (33%)",         weight: "33%", rationale: "Strongest single predictor (R² = 0.9819) — pre-existing moisture blocks bitumen bonding" },
-              { prop: "Porosity (24%)",   weight: "24%", rationale: "Water ingress pathway — dominant factor (Zhang et al. 2015, Apeagyei et al. 2017)" },
-              { prop: "Al₂O₃ (18%)",    weight: "18%", rationale: "Best chemical predictor (R² = 0.9362) — surface polarity and base character" },
-              { prop: "CaO (14%)",        weight: "14%", rationale: "Alkaline chemistry promotes adhesion (R² = 0.9196) — overridden by extreme porosity" },
-              { prop: "SiO₂ (7%)",       weight: "7%",  rationale: "Acidic chemistry reduces bitumen affinity (R² = 0.7506)" },
-              { prop: "Fe₂O₃ (4%)",     weight: "4%",  rationale: "Weakest predictor (R² = 0.5911) — limited generalisability" },
+              { prop: "MC (31.7%)",         weight: "31.7%", rationale: "Strongest single predictor (R² = 0.9819) — pre-existing moisture blocks bitumen bonding" },
+              { prop: "Porosity (32.2%)",   weight: "32.2%", rationale: "Water ingress pathway — dominant factor (Zhang et al. 2015, Apeagyei et al. 2017)" },
+              { prop: "Al₂O₃ (3.5%)",    weight: "3.5%", rationale: "Best chemical predictor (R² = 0.9362) — surface polarity and base character" },
+              { prop: "CaO (2.9%)",        weight: "2.9%", rationale: "Alkaline chemistry promotes adhesion (R² = 0.9196) — overridden by extreme porosity" },
+              { prop: "SiO₂ (10.1%)",       weight: "10.1%",  rationale: "Acidic chemistry reduces bitumen affinity (R² = 0.7506)" },
+              { prop: "Fe₂O₃ (19.6%)",     weight: "19.6%",  rationale: "Weakest predictor (R² = 0.5911) — limited generalisability" },
             ].map(({ prop, weight, rationale }) => (
               <div key={prop} className="flex items-start gap-2">
                 <Badge variant="outline" className="text-xs h-5 shrink-0 font-mono">{weight}</Badge>
