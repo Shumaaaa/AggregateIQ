@@ -19,10 +19,13 @@ export function GaugeMeter({ value }: GaugeMeterProps) {
   const r = 52, cx = 64, cy = 64;
   const circumference = Math.PI * r;
   const dash = (pct / 100) * circumference;
+  
+  // Format value for display: show up to 2 decimal places, remove trailing zeros
+  const displayValue = parseFloat(pct.toFixed(2));
 
   return (
     <div className="flex flex-col items-center gap-1">
-      <svg viewBox="0 0 128 80" className="w-44 h-28" aria-label={`Retained Coating: ${value}%`}>
+      <svg viewBox="0 0 128 80" className="w-40 h-24 sm:w-44 sm:h-28" aria-label={`Retained Coating: ${displayValue}%`}>
         {/* Background track */}
         <path
           d={`M ${cx - r},${cy} A ${r},${r} 0 0 1 ${cx + r},${cy}`}
@@ -42,10 +45,10 @@ export function GaugeMeter({ value }: GaugeMeterProps) {
           style={{ transition: "stroke-dasharray 0.8s ease" }}
         />
         {/* Value text */}
-        <text x={cx} y={cy - 4} textAnchor="middle" fontSize="22" fontWeight="700" fill={color}>
-          {value}%
+        <text x={cx} y={cy - 4} textAnchor="middle" fontSize="20" fontWeight="700" fill={color}>
+          {displayValue}%
         </text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="10" fill="hsl(var(--muted-foreground))">
+        <text x={cx} y={cy + 14} textAnchor="middle" fontSize="9" fill="hsl(var(--muted-foreground))">
           Retained Coating
         </text>
       </svg>
