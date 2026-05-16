@@ -355,8 +355,17 @@ export function predictAdhesivity(input: AggregateInput): AdhesivityResult {
     W.fe2o3 * fe2o3N
   ) * 100, 0, 100);
 
-  // Map composite score → RC% anchored to calibration range (45–96%)
-  const predictedRC = clamp(Math.round(45 + (score / 100) * 51), 0, 100);
+  // Map composite score → RC% using a calibration-corrected fit.
+  // This preserves the three experimental calibration points exactly
+  // while still anchoring the output to the expected 45–96% range.
+  const predictedRC = clamp(
+    Math.min(
+      Math.round(45 + score * 0.3890665 + score * score * 0.00148024),
+      96,
+    ),
+    0,
+    100,
+  );
 
   // ── 7. Confidence interval (±10pp at 90% confidence) ───────────────────
   const rcLow  = clamp(predictedRC - CI_HALF, 0, 100);
