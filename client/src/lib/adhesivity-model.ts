@@ -342,7 +342,7 @@ export function predictAdhesivity(input: AggregateInput): AdhesivityResult {
   const mcNorm   = normInverse(rawMC,   CALIB.mc.min,   CALIB.mc.max);
   const al2o3N   = normDirect (rawAl,   CALIB.al2o3.min, CALIB.al2o3.max);
   const caoN     = normInverse(rawCao,  CALIB.cao.min,  CALIB.cao.max);
-  const sio2N    = normDirect (rawSio2, CALIB.sio2.min, CALIB.sio2.max);
+  const sio2N    = normInverse(rawSio2, CALIB.sio2.min, CALIB.sio2.max);
   const fe2o3N   = normDirect (rawFe,   CALIB.fe2o3.min, CALIB.fe2o3.max);
 
   // ── 6. Weighted composite score (0–100) ────────────────────────────────
@@ -356,16 +356,8 @@ export function predictAdhesivity(input: AggregateInput): AdhesivityResult {
   ) * 100, 0, 100);
 
   // Map composite score → RC% using a calibration-corrected fit.
-  // This preserves the three experimental calibration points exactly
-  // while still anchoring the output to the expected 45–96% range.
-  const predictedRC = clamp(
-    Math.min(
-      Math.round(45 + score * 0.3890665 + score * score * 0.00148024),
-      96,
-    ),
-    0,
-    100,
-  );
+  // Return the continuous model result without integer rounding or artificial upper capping.
+  const predictedRC = 45 + score * 0.3890665 + score * score * 0.00148024;
 
   // ── 7. Confidence interval (±10pp at 90% confidence) ───────────────────
   const rcLow  = clamp(predictedRC - CI_HALF, 0, 100);
@@ -420,7 +412,7 @@ export function predictAdhesivity(input: AggregateInput): AdhesivityResult {
     rcHigh,
     grade,
     gradeColor,
-    score: Math.round(score),
+    score,
     confidence: isExperimental ? "experimental" : "index-based",
     incomplete,
     missingVars,
