@@ -342,7 +342,7 @@ export function predictAdhesivity(input: AggregateInput): AdhesivityResult {
   const mcNorm   = normInverse(rawMC,   CALIB.mc.min,   CALIB.mc.max);
   const al2o3N   = normDirect (rawAl,   CALIB.al2o3.min, CALIB.al2o3.max);
   const caoN     = normInverse(rawCao,  CALIB.cao.min,  CALIB.cao.max);
-  const sio2N    = normInverse(rawSio2, CALIB.sio2.min, CALIB.sio2.max);
+  const sio2N    = normDirect (rawSio2, CALIB.sio2.min, CALIB.sio2.max);
   const fe2o3N   = normDirect (rawFe,   CALIB.fe2o3.min, CALIB.fe2o3.max);
 
   // ── 6. Weighted composite score (0–100) ────────────────────────────────
