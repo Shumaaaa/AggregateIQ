@@ -175,7 +175,7 @@ function sectionH1(cur: PageCursor, text: string) {
   pdf.setTextColor(...C.primary);
   pdf.text(text.toUpperCase(), MARGIN + 5, boxY + 8.5);   // baseline 8.5mm into box
   pdf.setTextColor(...C.text);
-  cur.advance(16);
+  cur.advance(20);
 }
 
 // ── Sub-heading H2 ────────────────────────────────────────────────────────────
@@ -185,7 +185,7 @@ function sectionH2(cur: PageCursor, text: string) {
   cur.pdf.setTextColor(...C.primary);
   cur.pdf.text(text, MARGIN, cur.y + 7);   // +7 so text baseline is below cur.y
   cur.pdf.setTextColor(...C.text);
-  cur.advance(10);
+  cur.advance(13);
 }
 
 // ── Body paragraph — with justified alignment ────────────────────────────────
@@ -529,11 +529,11 @@ export async function generatePdfReport(
   sectionH1(cur, "Factor Contributions to Adhesivity Score");
 
   const factorCols: TableCol[] = [
-    { header: "Factor",          width: 52 },
+    { header: "Factor",          width: 50 },
     { header: "Weight",          width: 24, align: "center" },
-    { header: "Score (pts)",     width: 30, align: "center" },
-    { header: "Normalised",      width: 28, align: "center" },
-    { header: "Impact",          width: CONTENT_W - 134, align: "center" },
+    { header: "Score (pts)",     width: 35, align: "center" },
+    { header: "Normalised",      width: 30, align: "center" },
+    { header: "Impact",          width: CONTENT_W - 139, align: "center" },
   ];
   const factorDefs = [
     { key: "moistureContent" as const, label: "Moisture Content (MC)", weight: "31.7%" },
@@ -628,11 +628,11 @@ export async function generatePdfReport(
   // Variable-by-variable comparison table
   sectionH2(cur, "Variable-by-Variable Comparison");
   const stoneCols: TableCol[] = [
-    { header: "Variable",      width: 38 },
-    { header: "Entered (%)",   width: 30, align: "center" },
-    { header: "Reference (%)", width: 32, align: "center" },
-    { header: "Deviation (%)", width: 30, align: "center" },
-    { header: "Status",        width: CONTENT_W - 130, align: "center" },
+    { header: "Variable",      width: 36 },
+    { header: "Entered (%)",   width: 34, align: "center" },
+    { header: "Reference (%)", width: 36, align: "center" },
+    { header: "Deviation (%)", width: 34, align: "center" },
+    { header: "Status",        width: CONTENT_W - 140, align: "center" },
   ];
   const stoneRows = sr.variableChecks.map(v => [
     v.label,
@@ -837,11 +837,11 @@ export async function generatePdfReport(
 
   // Calibration data table
   const calCols: TableCol[] = [
-    { header: "Aggregate",          width: 38 },
-    { header: "Source / Location",  width: 52 },
-    { header: "RC (%)",             width: 20, align: "center" },
-    { header: "Porosity (%)",       width: 24, align: "center" },
-    { header: "MC (%)",             width: 25, align: "center" },
+    { header: "Aggregate",          width: 35 },
+    { header: "Source / Location",  width: 50 },
+    { header: "RC (%)",             width: 26, align: "center" },
+    { header: "Porosity (%)",       width: 28, align: "center" },
+    { header: "MC (%)",             width: 30, align: "center" },
   ];
   const calRows = [
     ["Basalt",    "Ntyuka Quarry, Dodoma",        "96",  "0.49",  "0.0245"],
