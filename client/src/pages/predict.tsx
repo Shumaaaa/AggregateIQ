@@ -224,7 +224,7 @@ export default function Predict() {
               {/* Physical properties */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wide">
-                  Physical Properties — 57% of model (MC + Porosity)
+                  Physical Properties — 63.1% of model (MC + Porosity)
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
                   {field("porosity",         "Porosity (%)",          "porosity",         "0.01")}
@@ -236,7 +236,7 @@ export default function Predict() {
               {/* Chemical properties */}
               <div>
                 <Label className="text-xs text-muted-foreground mb-2 block uppercase tracking-wide">
-                  Chemical Properties (XRF) — 43% of model (Al₂O₃ + CaO + SiO₂ + Fe₂O₃)
+                  Chemical Properties (XRF) — 36.9% of model (Al₂O₃ + CaO + SiO₂ + Fe₂O₃)
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
                   {field("fe2o3", "Fe₂O₃ (%)", "fe2o3", "0.01")}
